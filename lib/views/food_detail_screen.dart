@@ -120,9 +120,10 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
-                    child: Text(
-                      _isFavorite ? 'Đã thích' : 'Yêu thích',
-                      style: const TextStyle(fontSize: 10),
+                    child: Icon(
+                      _isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: _isFavorite ? Colors.red : AppColors.textMuted,
+                      size: 20,
                     ),
                   ),
                 ),
