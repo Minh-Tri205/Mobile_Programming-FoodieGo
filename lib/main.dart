@@ -24,7 +24,8 @@ class FoodieGoApp extends StatelessWidget {
       title: 'FoodieGo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      initialRoute: AppRoutes.splash,
+      // initialRoute: AppRoutes.splash,
+      initialRoute: AppRoutes.login,
       onGenerateRoute: AppRouter.generateRoute,
     );
   }

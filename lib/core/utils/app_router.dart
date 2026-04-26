@@ -1,3 +1,5 @@
+import 'package:doancuoiki/views/login_screen.dart';
+import 'package:doancuoiki/views/registerScreen.dart';
 import 'package:flutter/material.dart';
 import '../constants/app_routes.dart';
 import 'package:doancuoiki/views/splash_screen.dart';
@@ -37,6 +39,10 @@ class AppRouter {
         return _slide(const ProfileScreen(), settings);
       case AppRoutes.notifications:
         return _slide(const NotificationsScreen(), settings);
+      case AppRoutes.login:
+        return _slide(const LoginScreen(), settings);
+      case AppRoutes.register:
+        return _slide(const RegisterScreen(), settings);
       default:
         return _slide(const SplashScreen(), settings);
     }
@@ -49,13 +55,11 @@ class AppRouter {
       transitionsBuilder: (_, animation, __, child) {
         const begin = Offset(1.0, 0.0);
         const end = Offset.zero;
-        final tween = Tween(begin: begin, end: end).chain(
-          CurveTween(curve: Curves.easeInOutCubic),
-        );
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
+        final tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: Curves.easeInOutCubic));
+        return SlideTransition(position: animation.drive(tween), child: child);
       },
       transitionDuration: const Duration(milliseconds: 320),
     );

@@ -20,7 +20,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
       'name': 'Nguyễn Lan Anh',
       'emoji': '👩',
       'rating': '⭐⭐⭐⭐⭐',
-      'comment': 'Ngon tuyệt vời! Nước dùng đậm đà, thịt mềm. Sẽ đặt lại lần nữa.',
+      'comment':
+          'Ngon tuyệt vời! Nước dùng đậm đà, thịt mềm. Sẽ đặt lại lần nữa.',
     },
     {
       'name': 'Trần Minh Khoa',
@@ -44,20 +45,20 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final food = (ModalRoute.of(context)?.settings.arguments as FoodModel?) ??
+    final food =
+        (ModalRoute.of(context)?.settings.arguments as FoodModel?) ??
         FoodModel.sampleFoods[0];
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        verticalDirection: VerticalDirection.down,
         children: [
           Expanded(
             child: SingleChildScrollView(
               child: Column(
-                children: [
-                  _buildHero(context, food),
-                  _buildBody(food),
-                ],
+                children: [_buildHero(context, food), _buildBody(food)],
               ),
             ),
           ),
@@ -74,18 +75,13 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
         SizedBox(
           height: 240,
           width: double.infinity,
-          child: Image.asset(
-            food.imageUrl,
-            fit: BoxFit.cover,
-          ),
+          child: Image.asset(food.imageUrl, fit: BoxFit.cover),
         ),
 
         // overlay nhẹ cho dễ nhìn
         Container(
           height: 240,
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.2),
-          ),
+          decoration: BoxDecoration(color: Colors.black.withOpacity(0.2)),
         ),
 
         SafeArea(
@@ -156,7 +152,10 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.pastel3,
                   borderRadius: BorderRadius.circular(14),
@@ -184,7 +183,9 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              _metaChip('${food.deliveryMinutes}-${food.deliveryMinutes + 10} phút'),
+              _metaChip(
+                '${food.deliveryMinutes}-${food.deliveryMinutes + 10} phút',
+              ),
               const SizedBox(width: 14),
               _metaChip('${food.calories} cal'),
               const SizedBox(width: 14),
@@ -229,8 +230,10 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
   }
 
   Widget _metaChip(String text) {
-    return Text(text,
-        style: const TextStyle(fontSize: 13, color: AppColors.textMuted));
+    return Text(
+      text,
+      style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+    );
   }
 
   Widget _buildQtyControl() {
@@ -253,10 +256,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
             child: Text(
               '$_quantity',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
             ),
           ),
           GestureDetector(
@@ -277,8 +277,10 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
-      child: Text(text,
-          style: const TextStyle(color: Colors.white, fontSize: 18)),
+      child: Text(
+        text,
+        style: const TextStyle(color: Colors.white, fontSize: 18),
+      ),
     );
   }
 
