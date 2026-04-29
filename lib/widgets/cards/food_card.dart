@@ -1,3 +1,4 @@
+// lib/widgets/cards/food_card.dart
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/food_model.dart';
@@ -33,18 +34,30 @@ class FoodCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // IMAGE AREA (THAY EMOJI)
+            // IMAGE AREA — xử lý nullable imageUrl
             ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(18),
                 topRight: Radius.circular(18),
               ),
-              child: Image.asset(
-                food.imageUrl,
-                height: 110,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
+              child: food.imageUrl != null
+                  ? Image.asset(
+                      food.imageUrl!, // ✅ dùng ! vì đã kiểm tra null
+                      height: 110,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    )
+                  : Container(
+                      height: 110,
+                      width: double.infinity,
+                      color: bgColor,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.fastfood,
+                        size: 40,
+                        color: AppColors.accent1,
+                      ),
+                    ),
             ),
 
             // INFO
@@ -64,7 +77,20 @@ class FoodCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
 
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
+
+                  // categoryName thay cho rating — khớp SQL
+                  Text(
+                    food.categoryName,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  const SizedBox(height: 6),
 
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -77,13 +103,20 @@ class FoodCard extends StatelessWidget {
                           color: AppColors.accent1,
                         ),
                       ),
-
-                      Text(
-                        '${food.rating}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textMuted,
-                        ),
+                      // total_sold thay rating — khớp SQL
+                      Row(
+                        children: [
+                          const Icon(Icons.local_fire_department,
+                              size: 12, color: AppColors.accent4),
+                          const SizedBox(width: 2),
+                          Text(
+                            '${food.totalSold}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

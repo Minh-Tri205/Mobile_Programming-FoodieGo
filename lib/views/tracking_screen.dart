@@ -1,5 +1,8 @@
+// lib/views/tracking_screen.dart
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_routes.dart';
+import '../../models/order_model.dart';
 import '../../widgets/common/back_button_widget.dart';
 
 class TrackingScreen extends StatelessWidget {
@@ -7,6 +10,10 @@ class TrackingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Nhận OrderModel từ arguments — khớp với cách truyền từ orders_screen
+    final order = ModalRoute.of(context)?.settings.arguments as OrderModel?
+        ?? OrderModel.sampleOrders.first;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -20,15 +27,15 @@ class TrackingScreen extends StatelessWidget {
                   BackButtonWidget(
                     onTap: () => Navigator.pushNamedAndRemoveUntil(
                       context,
-                      '/orders',
+                      AppRoutes.orders,
                       (r) => false,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         'Theo dõi đơn hàng',
                         style: TextStyle(
                           fontSize: 20,
@@ -36,9 +43,10 @@ class TrackingScreen extends StatelessWidget {
                           color: AppColors.textPrimary,
                         ),
                       ),
+                      // Hiển thị order_code từ SQL
                       Text(
-                        '#DH240401 • Dự kiến 25 phút',
-                        style: TextStyle(
+                        '${order.orderCode}  •  Dự kiến 25 phút',
+                        style: const TextStyle(
                             fontSize: 13, color: AppColors.textMuted),
                       ),
                     ],
@@ -52,9 +60,9 @@ class TrackingScreen extends StatelessWidget {
                   children: [
                     _buildMapArea(),
                     const SizedBox(height: 36),
-                    _buildStepList(),
+                    _buildStepList(order),
                     const SizedBox(height: 16),
-                    _buildOrderSummaryCard(),
+                    _buildOrderSummaryCard(order),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -70,7 +78,6 @@ class TrackingScreen extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // Map placeholder
         Container(
           height: 180,
           margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -85,14 +92,14 @@ class TrackingScreen extends StatelessWidget {
           alignment: Alignment.center,
           child: const Text('🗺️', style: TextStyle(fontSize: 52)),
         ),
-        // Driver info card
         Positioned(
           bottom: -22,
           left: 0,
           right: 0,
           child: Center(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
               decoration: BoxDecoration(
                 color: AppColors.card,
                 borderRadius: BorderRadius.circular(50),
@@ -119,9 +126,9 @@ class TrackingScreen extends StatelessWidget {
                         style: TextStyle(fontSize: 22)),
                   ),
                   const SizedBox(width: 10),
-                  Column(
+                  const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
                         'Nguyễn Văn Tài',
                         style: TextStyle(
@@ -131,7 +138,7 @@ class TrackingScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '⭐ 4.9 • Tài xế',
+                        '⭐ 4.9  •  Tài xế giao hàng',
                         style: TextStyle(
                             fontSize: 11, color: AppColors.textMuted),
                       ),
@@ -163,32 +170,44 @@ class TrackingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStepList() {
+  // Các bước khớp đúng với status trong SQL:
+  // confirmed → preparing → delivering → completed
+  Widget _buildStepList(OrderModel order) {
+    final bool isConfirmed = true; // đơn đã tạo thì luôn confirmed
+    final bool isPreparing = order.status == OrderStatus.preparing ||
+        order.status == OrderStatus.delivering ||
+        order.status == OrderStatus.completed;
+    final bool isDelivering = order.status == OrderStatus.delivering ||
+        order.status == OrderStatus.completed;
+    final bool isCompleted = order.status == OrderStatus.completed;
+
     final steps = [
       {
         'icon': '✅',
         'title': 'Đơn hàng đã được xác nhận',
-        'time': '09:41 - Nhà hàng đã nhận đơn',
-        'done': true,
+        'time': '${order.createdAt}  •  Cửa hàng đã nhận đơn',
+        'done': isConfirmed,
+        'active': false,
       },
       {
         'icon': '🍳',
         'title': 'Đang chuẩn bị món ăn',
-        'time': '09:45 - Đầu bếp đang nấu',
-        'done': true,
+        'time': 'Đầu bếp đang nấu',
+        'done': isPreparing,
+        'active': order.status == OrderStatus.preparing,
       },
       {
         'icon': '🛵',
-        'title': 'Tài xế đang đến lấy hàng',
-        'time': '09:52 - Đang trên đường',
-        'done': false,
-        'active': true,
+        'title': 'Đang giao hàng',
+        'time': 'Tài xế đang trên đường',
+        'done': isDelivering,
+        'active': order.status == OrderStatus.delivering,
       },
       {
         'icon': '📦',
         'title': 'Giao hàng thành công',
-        'time': '~10:15 - Dự kiến',
-        'done': false,
+        'time': 'Dự kiến ~25 phút',
+        'done': isCompleted,
         'active': false,
       },
     ];
@@ -203,12 +222,13 @@ class TrackingScreen extends StatelessWidget {
           final bool isLast = i == steps.length - 1;
           final Color dotColor = done
               ? AppColors.accent3
-              : (active ? AppColors.accent4 : const Color(0xFFE0D5CF));
+              : (active
+                  ? AppColors.accent4
+                  : const Color(0xFFE0D5CF));
 
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Dot + line
               Column(
                 children: [
                   Container(
@@ -264,7 +284,8 @@ class TrackingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOrderSummaryCard() {
+  // Hiển thị dữ liệu thực từ OrderModel — khớp order_items, total_amount SQL
+  Widget _buildOrderSummaryCard(OrderModel order) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(16),
@@ -274,8 +295,8 @@ class TrackingScreen extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
+        children: [
+          const Text(
             '📋 Chi tiết đơn hàng',
             style: TextStyle(
               fontSize: 13,
@@ -283,19 +304,53 @@ class TrackingScreen extends StatelessWidget {
               color: AppColors.accent2,
             ),
           ),
-          SizedBox(height: 8),
-          Text(
-            '2x Bún Bò Huế  •  1x Pizza Hải Sản',
-            style: TextStyle(fontSize: 13, color: AppColors.textPrimary),
+          const SizedBox(height: 8),
+          // Địa chỉ giao hàng — khớp delivery_address SQL
+          Row(
+            children: [
+              const Icon(Icons.location_on_outlined,
+                  size: 14, color: AppColors.textMuted),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  order.deliveryAddress,
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textMuted),
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 6),
+          const SizedBox(height: 6),
+          // Danh sách món — khớp order_items SQL
           Text(
-            'Tổng: 174.000đ',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: AppColors.accent2,
-            ),
+            order.itemsSummary,
+            style: const TextStyle(
+                fontSize: 13, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 8),
+          const Divider(color: Color(0x33185FA5), height: 1),
+          const SizedBox(height: 8),
+          // Tổng tiền — khớp total_amount SQL
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Tổng cộng',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.accent2,
+                ),
+              ),
+              Text(
+                '${(order.totalAmount / 1000).toStringAsFixed(0)}.000đ',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.accent2,
+                ),
+              ),
+            ],
           ),
         ],
       ),

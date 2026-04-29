@@ -15,6 +15,7 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   final CartModel _cart = CartModel.sample();
   final TextEditingController _couponController = TextEditingController();
+  bool _voucherApplied = false;
 
   final List<Color> _itemBgColors = [
     AppColors.pastel1,
@@ -27,6 +28,25 @@ class _CartScreenState extends State<CartScreen> {
   void dispose() {
     _couponController.dispose();
     super.dispose();
+  }
+
+  // Kết nối nút "Áp dụng" với CartModel.applyVoucher()
+  void _applyVoucher() {
+    final code = _couponController.text.trim().toUpperCase();
+    setState(() {
+      _cart.applyVoucher(code);
+      _voucherApplied = _cart.discountAmount > 0;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(_voucherApplied
+            ? '✅ Áp dụng mã giảm giá thành công!'
+            : '❌ Mã không hợp lệ hoặc đơn chưa đủ 50.000đ'),
+        backgroundColor: _voucherApplied
+            ? AppColors.accent3
+            : AppColors.statusCancelledText,
+      ),
+    );
   }
 
   @override
@@ -117,7 +137,7 @@ class _CartScreenState extends State<CartScreen> {
       ),
       child: Row(
         children: [
-          // IMAGE (THAY EMOJI)
+          // IMAGE — xử lý nullable imageUrl
           Container(
             width: 58,
             height: 58,
@@ -127,10 +147,12 @@ class _CartScreenState extends State<CartScreen> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              child: Image.asset(
-                item.food.imageUrl, // 👈 QUAN TRỌNG
-                fit: BoxFit.cover,
-              ),
+              child: item.food.imageUrl != null
+                  ? Image.asset(
+                      item.food.imageUrl!, // ✅ dùng ! vì đã kiểm tra null
+                      fit: BoxFit.cover,
+                    )
+                  : const Icon(Icons.fastfood, color: AppColors.accent1),
             ),
           ),
 
@@ -231,17 +253,18 @@ class _CartScreenState extends State<CartScreen> {
         ),
         child: Row(
           children: [
-            const Text('Mã giảm giá',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            const Text(
+              'Mã giảm giá',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(width: 10),
-
             Expanded(
               child: TextField(
                 controller: _couponController,
+                textCapitalization: TextCapitalization.characters,
                 decoration: const InputDecoration(
-                  hintText: 'Nhập mã giảm giá...',
-                  hintStyle:
-                      TextStyle(fontSize: 14, color: AppColors.textMuted),
+                  hintText: 'VD: GIAM10K',
+                  hintStyle: TextStyle(fontSize: 14, color: AppColors.textMuted),
                   border: InputBorder.none,
                   isDense: true,
                   contentPadding: EdgeInsets.zero,
@@ -249,18 +272,18 @@ class _CartScreenState extends State<CartScreen> {
                 ),
               ),
             ),
+            // ✅ Đã kết nối với _applyVoucher()
             GestureDetector(
-              onTap: () {},
+              onTap: _applyVoucher,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                 decoration: BoxDecoration(
-                  color: AppColors.accent1,
+                  color: _voucherApplied ? AppColors.accent3 : AppColors.accent1,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  'Áp dụng',
-                  style: TextStyle(
+                child: Text(
+                  _voucherApplied ? '✓ Đã áp dụng' : 'Áp dụng',
+                  style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -285,27 +308,31 @@ class _CartScreenState extends State<CartScreen> {
       child: Column(
         children: [
           _summaryRow(
-              'Tạm tính',
-              '${(_cart.subtotal / 1000).toStringAsFixed(0)}.000đ',
-              false),
+            'Tạm tính',
+            '${(_cart.subtotal / 1000).toStringAsFixed(0)}.000đ',
+            false,
+          ),
           const SizedBox(height: 7),
           _summaryRow(
-              'Phí giao hàng',
-              '${(_cart.deliveryFee / 1000).toStringAsFixed(0)}.000đ',
-              false),
+            'Phí giao hàng',
+            '${(_cart.deliveryFee / 1000).toStringAsFixed(0)}.000đ',
+            false,
+          ),
           const SizedBox(height: 7),
           _summaryRow(
-              'Giảm giá',
-              '-${(_cart.discount / 1000).toStringAsFixed(0)}.000đ',
-              false,
-              valueColor: AppColors.accent3),
+            'Giảm giá',
+            '-${(_cart.discountAmount / 1000).toStringAsFixed(0)}.000đ', // ✅ đổi discount → discountAmount
+            false,
+            valueColor: AppColors.accent3,
+          ),
           const SizedBox(height: 6),
           const Divider(color: Color(0x33FF8C69), thickness: 1),
           const SizedBox(height: 6),
           _summaryRow(
-              'Tổng cộng',
-              '${(_cart.total / 1000).toStringAsFixed(0)}.000đ',
-              true),
+            'Tổng cộng',
+            '${(_cart.total / 1000).toStringAsFixed(0)}.000đ',
+            true,
+          ),
         ],
       ),
     );
