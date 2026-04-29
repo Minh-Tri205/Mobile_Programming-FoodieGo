@@ -1,3 +1,4 @@
+// lib/views/notifications_screen.dart
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../widgets/common/back_button_widget.dart';
@@ -38,17 +39,17 @@ class NotificationsScreen extends StatelessWidget {
                     icon: '🛵',
                     iconBg: AppColors.pastel3,
                     title: 'Đơn hàng đang được giao!',
-                    message:
-                        'Tài xế Nguyễn Văn Tài đang trên đường. Dự kiến 15 phút nữa.',
+                    // Khớp trigger trg_after_order_created trong SQL
+                    message: 'Đơn hàng #DH-001 của bạn đang trên đường giao. Dự kiến 15 phút nữa.',
                     time: 'Vừa xong',
                     isUnread: true,
                   ),
                   _notifItem(
                     icon: '🎁',
                     iconBg: AppColors.pastel4,
-                    title: 'Ưu đãi đặc biệt cho bạn!',
-                    message:
-                        'Giảm 30% đơn tiếp theo. Dùng mã SAVE30. Hết hạn hôm nay!',
+                    title: 'Ưu đãi đặc biệt hôm nay!',
+                    // Khớp voucher GIAM10K trong SQL
+                    message: 'Dùng mã GIAM10K giảm 10.000đ cho đơn từ 50.000đ. Áp dụng ngay!',
                     time: '5 phút trước',
                     isUnread: true,
                   ),
@@ -56,8 +57,8 @@ class NotificationsScreen extends StatelessWidget {
                     icon: '⭐',
                     iconBg: AppColors.pastel2,
                     title: 'Đánh giá đơn hàng của bạn',
-                    message:
-                        'Bạn có hài lòng với đơn từ Sakura Sushi không? Hãy để lại đánh giá!',
+                    // Khớp bảng reviews trong SQL
+                    message: 'Bạn có hài lòng với đơn hàng #DH-002 không? Hãy để lại đánh giá!',
                     time: '2 giờ trước',
                     isUnread: true,
                   ),
@@ -66,27 +67,27 @@ class NotificationsScreen extends StatelessWidget {
                     icon: '✅',
                     iconBg: AppColors.pastel1,
                     title: 'Đơn hàng đã giao thành công',
-                    message:
-                        'Đơn hàng #DH240330 từ Phở 24 đã giao thành công.',
+                    // Khớp trigger trg_after_order_completed trong SQL
+                    message: 'Đơn hàng #DH-003 đã giao thành công. Bạn được cộng 10 điểm tích lũy!',
                     time: 'Hôm qua 19:45',
-                    isUnread: false,
-                  ),
-                  _notifItem(
-                    icon: '🍕',
-                    iconBg: AppColors.pastel5,
-                    title: 'Nhà hàng mới gần bạn!',
-                    message:
-                        'Pizza Hot & Fast vừa mở cửa gần khu vực của bạn. Thử ngay!',
-                    time: '2 ngày trước',
                     isUnread: false,
                   ),
                   _notifItem(
                     icon: '🎉',
                     iconBg: AppColors.pastel4,
-                    title: 'Chúc mừng! Bạn đã đặt 10 đơn',
-                    message:
-                        'Bạn nhận được voucher 50.000đ cho đơn hàng tiếp theo. Hết hạn sau 7 ngày.',
+                    title: 'Chúc mừng! Bạn đã tích 50 điểm',
+                    // Khớp loyalty_points trong bảng users SQL
+                    message: 'Bạn đang có 50 điểm tích lũy. Tiếp tục đặt hàng để nhận thêm ưu đãi!',
                     time: '3 ngày trước',
+                    isUnread: false,
+                  ),
+                  _notifItem(
+                    icon: '🍜',
+                    iconBg: AppColors.pastel5,
+                    title: 'Món mới đã có mặt!',
+                    // Khớp bảng food_items trong SQL
+                    message: 'Bún Bò Huế đặc biệt vừa được thêm vào thực đơn. Thử ngay hôm nay!',
+                    time: '5 ngày trước',
                     isUnread: false,
                   ),
                   const SizedBox(height: 24),
@@ -148,29 +149,23 @@ class NotificationsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                Text(title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    )),
                 const SizedBox(height: 3),
-                Text(
-                  message,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textMuted,
-                    height: 1.4,
-                  ),
-                ),
+                Text(message,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textMuted,
+                      height: 1.4,
+                    )),
                 const SizedBox(height: 5),
-                Text(
-                  time,
-                  style: const TextStyle(
-                      fontSize: 11, color: AppColors.textMuted),
-                ),
+                Text(time,
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textMuted)),
               ],
             ),
           ),

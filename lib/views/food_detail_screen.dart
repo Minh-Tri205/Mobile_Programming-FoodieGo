@@ -1,3 +1,4 @@
+// lib/views/food_detail_screen.dart
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
@@ -13,27 +14,23 @@ class FoodDetailScreen extends StatefulWidget {
 
 class _FoodDetailScreenState extends State<FoodDetailScreen> {
   int _quantity = 1;
-  bool _isFavorite = false;
 
+  // Dữ liệu reviews tĩnh — khớp với bảng reviews trong SQL
   final List<Map<String, String>> _reviews = [
     {
       'name': 'Nguyễn Lan Anh',
-      'emoji': '👩',
-      'rating': '⭐⭐⭐⭐⭐',
-      'comment':
-          'Ngon tuyệt vời! Nước dùng đậm đà, thịt mềm. Sẽ đặt lại lần nữa.',
+      'rating': '5',
+      'comment': 'Ngon tuyệt vời! Nước dùng đậm đà, thịt mềm. Sẽ đặt lại lần nữa.',
     },
     {
       'name': 'Trần Minh Khoa',
-      'emoji': '👨',
-      'rating': '⭐⭐⭐⭐',
+      'rating': '4',
       'comment': 'Giao hàng nhanh, đồ ăn còn nóng. Rất hài lòng!',
     },
     {
       'name': 'Lê Thị Hoa',
-      'emoji': '🧑',
-      'rating': '⭐⭐⭐⭐⭐',
-      'comment': 'Đặc sản thật sự, hương vị chuẩn miền Trung.',
+      'rating': '5',
+      'comment': 'Hương vị chuẩn, rất đáng tiền.',
     },
   ];
 
@@ -52,8 +49,6 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        verticalDirection: VerticalDirection.down,
         children: [
           Expanded(
             child: SingleChildScrollView(
@@ -71,59 +66,41 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
   Widget _buildHero(BuildContext context, FoodModel food) {
     return Stack(
       children: [
-        // IMAGE THAY EMOJI
         SizedBox(
           height: 240,
           width: double.infinity,
-          child: Image.asset(food.imageUrl, fit: BoxFit.cover),
+          child: food.imageUrl != null
+              ? Image.asset(food.imageUrl!, fit: BoxFit.cover)
+              : Container(
+                  color: AppColors.pastel1,
+                  alignment: Alignment.center,
+                  child: const Text('🍽️', style: TextStyle(fontSize: 64)),
+                ),
         ),
-
-        // overlay nhẹ cho dễ nhìn
         Container(
           height: 240,
-          decoration: BoxDecoration(color: Colors.black.withOpacity(0.2)),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.2),
+          ),
         ),
-
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.85),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 16,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.85),
+                  shape: BoxShape.circle,
                 ),
-                GestureDetector(
-                  onTap: () => setState(() => _isFavorite = !_isFavorite),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.85),
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      _isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: _isFavorite ? Colors.red : AppColors.textMuted,
-                      size: 20,
-                    ),
-                  ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 16,
+                  color: AppColors.textPrimary,
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -137,6 +114,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Tên món + danh mục
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -151,17 +129,15 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                 ),
               ),
               const SizedBox(width: 8),
+              // Hiển thị danh mục thay cho rating (không có trong SQL)
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: AppColors.pastel3,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Text(
-                  '${food.rating}',
+                  food.categoryName,
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -171,29 +147,33 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
               ),
             ],
           ),
+
           const SizedBox(height: 8),
+
+          // Mô tả
           Text(
-            food.description,
+            food.description ?? 'Không có mô tả.',
             style: const TextStyle(
               fontSize: 14,
               color: AppColors.textMuted,
               height: 1.6,
             ),
           ),
+
           const SizedBox(height: 12),
+
+          // Thống kê: đã bán
           Row(
             children: [
-              _metaChip(
-                '${food.deliveryMinutes}-${food.deliveryMinutes + 10} phút',
-              ),
+              _metaChip('🔥 Đã bán: ${food.totalSold}'),
               const SizedBox(width: 14),
-              _metaChip('${food.calories} cal'),
-              const SizedBox(width: 14),
-              _metaChip('${food.rating} (${food.reviewCount})'),
+              _metaChip(food.isActive ? '✅ Còn hàng' : '❌ Hết hàng'),
             ],
           ),
+
           const SizedBox(height: 20),
 
+          // Giá + số lượng
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -211,6 +191,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
 
           const SizedBox(height: 24),
 
+          // Đánh giá — khớp bảng reviews trong SQL
           const Text(
             'Đánh giá khách hàng',
             style: TextStyle(
@@ -220,9 +201,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
             ),
           ),
           const SizedBox(height: 12),
-
           ...List.generate(_reviews.length, (i) => _buildReviewItem(i)),
-
           const SizedBox(height: 24),
         ],
       ),
@@ -246,9 +225,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () {
-              if (_quantity > 1) setState(() => _quantity--);
-            },
+            onTap: () { if (_quantity > 1) setState(() => _quantity--); },
             child: _circleButton('−'),
           ),
           SizedBox(
@@ -277,32 +254,51 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.white, fontSize: 18),
-      ),
+      child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 18)),
     );
   }
 
   Widget _buildReviewItem(int index) {
     final r = _reviews[index];
+    final stars = int.tryParse(r['rating'] ?? '5') ?? 5;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.divider)),
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            backgroundColor:
-                _reviewAvatarColors[index % _reviewAvatarColors.length],
-            child: Text(r['name']![0]), // chữ cái đầu thay avatar
+            backgroundColor: _reviewAvatarColors[index % _reviewAvatarColors.length],
+            child: Text(
+              r['name']![0],
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(r['name']!),
-                Text(r['rating']!),
-                Text(r['comment']!),
+                Text(r['name']!,
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                // Hiển thị sao bằng icon thay emoji
+                Row(
+                  children: List.generate(
+                    5,
+                    (i) => Icon(
+                      i < stars ? Icons.star : Icons.star_border,
+                      size: 14,
+                      color: AppColors.accent4,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(r['comment']!,
+                    style: const TextStyle(
+                        fontSize: 13, color: AppColors.textMuted)),
               ],
             ),
           ),

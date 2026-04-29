@@ -136,29 +136,31 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsRow() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          _statItem('28', 'Đơn hàng', isLast: false),
-          _statItem('⭐ 4.9', 'Đánh giá', isLast: false),
-          _statItem('3', 'Yêu thích', isLast: true),
-        ],
-      ),
-    );
-  }
+ // Thay hàm _buildStatsRow cũ bằng:
+Widget _buildStatsRow() {
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 20),
+    decoration: BoxDecoration(
+      color: AppColors.card,
+      borderRadius: BorderRadius.circular(18),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.06),
+          blurRadius: 10,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        _statItem('28', 'Đơn hàng', isLast: false),
+        // loyalty_points — khớp cột loyalty_points trong bảng users SQL
+        _statItem('50 🪙', 'Điểm tích lũy', isLast: false),
+        _statItem('⭐ 4.9', 'Đánh giá', isLast: true),
+      ],
+    ),
+  );
+}
 
   Widget _statItem(String value, String label, {required bool isLast}) {
     return Expanded(

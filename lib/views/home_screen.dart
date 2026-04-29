@@ -1,10 +1,9 @@
+// lib/views/home_screen.dart
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
 import '../../models/food_model.dart';
-import '../../models/restaurant_model.dart';
 import '../../widgets/cards/food_card.dart';
-import '../../widgets/cards/restaurant_card.dart';
 import '../../widgets/common/category_chip.dart';
 import '../../widgets/navigation/app_bottom_nav.dart';
 
@@ -17,13 +16,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedCategory = 0;
+
+  // Danh mục khớp với bảng categories trong SQL
   final List<String> _categories = [
-    '🍜 Tất cả',
-    '🍕 Pizza',
-    '🍣 Sushi',
-    '🍔 Burger',
-    '🥗 Salad',
-    '🧋 Trà sữa',
+    'Tất cả',
+    'Món Nước',
+    'Cơm Văn Phòng',
+    'Đồ Uống',
   ];
 
   final List<Color> _foodBgColors = [
@@ -33,12 +32,13 @@ class _HomeScreenState extends State<HomeScreen> {
     AppColors.pastel4,
   ];
 
-  final List<Color> _restBgColors = [
-    AppColors.pastel1,
-    AppColors.pastel3,
-    AppColors.pastel4,
-    AppColors.pastel2,
-  ];
+  List<FoodModel> get _filteredFoods {
+    if (_selectedCategory == 0) return FoodModel.sampleFoods;
+    final cat = _categories[_selectedCategory];
+    return FoodModel.sampleFoods
+        .where((f) => f.categoryName == cat)
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,17 +56,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildPromoBanner(),
                     _buildSectionTitle('Danh mục'),
                     _buildCategories(),
-                    _buildSectionRow('Phổ biến hôm nay', AppRoutes.restaurant),
+                    _buildSectionTitle('Thực đơn'),
                     _buildFoodGrid(),
-                    _buildSectionRow('Nhà hàng gần bạn', AppRoutes.restaurant),
-                    RestaurantCard(
-                      restaurant: RestaurantModel.sampleRestaurants[0],
-                      bgColor: _restBgColors[0],
-                      onTap: () => Navigator.pushNamed(
-                        context,
-                        AppRoutes.restaurant,
-                      ),
-                    ),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -87,11 +78,11 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
-                    'Xin chào, Minh Anh 👋',
+                    'Xin chào! 👋',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
@@ -100,15 +91,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   SizedBox(height: 2),
                   Text(
-                    '📍 Quận 1, TP. HCM',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textMuted,
-                    ),
+                    'Hôm nay bạn muốn ăn gì?',
+                    style: TextStyle(fontSize: 13, color: AppColors.textMuted),
                   ),
                 ],
               ),
-              // Bell icon with badge
               GestureDetector(
                 onTap: () => Navigator.pushNamed(context, AppRoutes.notifications),
                 child: Stack(
@@ -121,7 +108,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
-                      child: const Text('🔔', style: TextStyle(fontSize: 20)),
+                      child: const Icon(Icons.notifications_outlined,
+                          color: AppColors.textPrimary),
                     ),
                     Positioned(
                       top: 0,
@@ -153,10 +141,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: const Row(
                 children: [
-                  Text('🔍', style: TextStyle(fontSize: 16)),
+                  Icon(Icons.search, color: AppColors.textMuted, size: 18),
                   SizedBox(width: 10),
                   Text(
-                    'Tìm kiếm món ăn, nhà hàng...',
+                    'Tìm kiếm món ăn...',
                     style: TextStyle(fontSize: 14, color: AppColors.textMuted),
                   ),
                 ],
@@ -186,26 +174,24 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Giảm 30% hôm nay!',
+                  'Mã giảm giá GIAM10K!',
                   style: TextStyle(
-                    fontSize: 19,
+                    fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Cho đơn hàng đầu tiên của bạn',
+                  'Giảm 10.000đ cho đơn từ 50.000đ',
                   style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                 ),
                 const SizedBox(height: 10),
                 GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.restaurant),
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.cart),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
+                        horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.accent1,
                       borderRadius: BorderRadius.circular(14),
@@ -231,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
       child: Text(
         title,
         style: const TextStyle(
@@ -243,36 +229,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSectionRow(String title, String route) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, route),
-            child: const Text(
-              'Xem tất cả',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.accent1,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCategories() {
     return SizedBox(
       height: 40,
@@ -280,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: _categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           return CategoryChip(
             label: _categories[index],
@@ -293,6 +249,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildFoodGrid() {
+    final foods = _filteredFoods;
+    if (foods.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(40),
+        child: Center(
+          child: Text('Không có món nào.',
+              style: TextStyle(color: AppColors.textMuted)),
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GridView.builder(
@@ -304,13 +270,16 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSpacing: 12,
           childAspectRatio: 0.85,
         ),
-        itemCount: FoodModel.sampleFoods.length,
+        itemCount: foods.length,
         itemBuilder: (context, index) {
           return FoodCard(
-            food: FoodModel.sampleFoods[index],
+            food: foods[index],
             bgColor: _foodBgColors[index % _foodBgColors.length],
-            onTap: () => Navigator.pushNamed(context, AppRoutes.foodDetail,
-                arguments: FoodModel.sampleFoods[index]),
+            onTap: () => Navigator.pushNamed(
+              context,
+              AppRoutes.foodDetail,
+              arguments: foods[index],
+            ),
           );
         },
       ),
