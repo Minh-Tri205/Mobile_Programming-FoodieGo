@@ -1,11 +1,11 @@
 // lib/views/home_screen.dart
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_routes.dart';
-import '../../models/food_model.dart';
-import '../../widgets/cards/food_card.dart';
-import '../../widgets/common/category_chip.dart';
-import '../../widgets/navigation/app_bottom_nav.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_routes.dart';
+import '../../../models/food_model.dart';
+import '../../../widgets/cards/food_card.dart';
+import '../../../widgets/common/category_chip.dart';
+import '../../../widgets/navigation/app_bottom_nav.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

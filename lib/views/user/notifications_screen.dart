@@ -1,7 +1,7 @@
 // lib/views/notifications_screen.dart
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../widgets/common/back_button_widget.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../widgets/common/back_button_widget.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});

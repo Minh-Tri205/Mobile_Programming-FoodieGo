@@ -1,7 +1,8 @@
+import 'package:doancuoiki/views/admin/admin_dashboard_screen.dart';
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_text_styles.dart';
-import '../../core/constants/app_routes.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/app_routes.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,7 +27,6 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             children: [
               const SizedBox(height: 40),
-
               /// Logo / Title
               Column(
                 children: [
@@ -97,7 +97,16 @@ class _LoginScreenState extends State<LoginScreen> {
               /// Login Button
               GestureDetector(
                 onTap: () {
-                  Navigator.pushReplacementNamed(context, AppRoutes.home);
+                  final String email = emailController.text.trim();
+                  final String password = passwordController.text.trim();
+                  if (email == "admin") {
+                    Navigator.pushReplacementNamed(
+                      context,
+                      AppRoutes.adminDashboard,
+                    );
+                  } else {
+                    Navigator.pushReplacementNamed(context, AppRoutes.home);
+                  }
                 },
                 child: Container(
                   width: double.infinity,

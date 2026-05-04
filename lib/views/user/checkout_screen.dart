@@ -1,9 +1,9 @@
 // lib/views/checkout_screen.dart
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_routes.dart';
-import '../../models/cart_model.dart';
-import '../../widgets/common/primary_button.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_routes.dart';
+import '../../../models/cart_model.dart';
+import '../../../widgets/common/primary_button.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});

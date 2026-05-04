@@ -1,9 +1,9 @@
 // lib/views/search_screen.dart
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_routes.dart';
-import '../../models/food_model.dart';
-import '../../widgets/navigation/app_bottom_nav.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_routes.dart';
+import '../../../models/food_model.dart';
+import '../../../widgets/navigation/app_bottom_nav.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});

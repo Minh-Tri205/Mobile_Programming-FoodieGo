@@ -1,10 +1,10 @@
 // lib/views/order_detail_screen.dart
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_routes.dart';
-import '../../models/order_model.dart';
-import '../../widgets/common/back_button_widget.dart';
-import '../../widgets/common/primary_button.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_routes.dart';
+import '../../../models/order_model.dart';
+import '../../../widgets/common/back_button_widget.dart';
+import '../../../widgets/common/primary_button.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   const OrderDetailScreen({super.key});

@@ -1,3 +1,4 @@
+import 'package:doancuoiki/views/admin/admin_dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'core/constants/app_routes.dart';
@@ -24,7 +25,6 @@ class FoodieGoApp extends StatelessWidget {
       title: 'FoodieGo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      // initialRoute: AppRoutes.splash,
       initialRoute: AppRoutes.login,
       onGenerateRoute: AppRouter.generateRoute,
     );

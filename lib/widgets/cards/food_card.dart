@@ -106,8 +106,11 @@ class FoodCard extends StatelessWidget {
                       // total_sold thay rating — khớp SQL
                       Row(
                         children: [
-                          const Icon(Icons.local_fire_department,
-                              size: 12, color: AppColors.accent4),
+                          const Icon(
+                            Icons.local_fire_department,
+                            size: 12,
+                            color: AppColors.accent4,
+                          ),
                           const SizedBox(width: 2),
                           Text(
                             '${food.totalSold}',

@@ -1,9 +1,9 @@
 // lib/views/food_detail_screen.dart
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_routes.dart';
-import '../../models/food_model.dart';
-import '../../widgets/common/primary_button.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_routes.dart';
+import '../../../models/food_model.dart';
+import '../../../widgets/common/primary_button.dart';
 
 class FoodDetailScreen extends StatefulWidget {
   const FoodDetailScreen({super.key});

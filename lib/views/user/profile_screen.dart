@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_routes.dart';
-import '../../widgets/navigation/app_bottom_nav.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_routes.dart';
+import '../../../widgets/navigation/app_bottom_nav.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -12,6 +12,7 @@ class ProfileScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildProfileHeader(),
             const SizedBox(height: 16),
@@ -66,6 +67,9 @@ class ProfileScreen extends StatelessWidget {
       bottomNavigationBar: const AppBottomNav(currentIndex: 3),
     );
   }
+
+  // --- CÁC HÀM BUILDER GIỮ NGUYÊN NHƯ CŨ (HEADER, STATS, SECTION LABEL, MENU ITEM) ---
+  // ... (Bạn giữ lại code cũ của mình cho đến hàm _buildLogoutItem) ...
 
   Widget _buildProfileHeader() {
     return Container(
@@ -123,7 +127,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             child: const Text(
-              '✏️  Chỉnh sửa hồ sơ',
+              '✏️   Chỉnh sửa hồ sơ',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -136,31 +140,29 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
- // Thay hàm _buildStatsRow cũ bằng:
-Widget _buildStatsRow() {
-  return Container(
-    margin: const EdgeInsets.symmetric(horizontal: 20),
-    decoration: BoxDecoration(
-      color: AppColors.card,
-      borderRadius: BorderRadius.circular(18),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.06),
-          blurRadius: 10,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Row(
-      children: [
-        _statItem('28', 'Đơn hàng', isLast: false),
-        // loyalty_points — khớp cột loyalty_points trong bảng users SQL
-        _statItem('50 🪙', 'Điểm tích lũy', isLast: false),
-        _statItem('⭐ 4.9', 'Đánh giá', isLast: true),
-      ],
-    ),
-  );
-}
+  Widget _buildStatsRow() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _statItem('28', 'Đơn hàng', isLast: false),
+          _statItem('50 🪙', 'Điểm tích lũy', isLast: false),
+          _statItem('⭐ 4.9', 'Đánh giá', isLast: true),
+        ],
+      ),
+    );
+  }
 
   Widget _statItem(String value, String label, {required bool isLast}) {
     return Expanded(
@@ -168,9 +170,7 @@ Widget _buildStatsRow() {
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
           border: !isLast
-              ? const Border(
-                  right: BorderSide(color: Color(0xFFF5EEE9)),
-                )
+              ? const Border(right: BorderSide(color: Color(0xFFF5EEE9)))
               : null,
         ),
         child: Column(
@@ -185,8 +185,7 @@ Widget _buildStatsRow() {
             ),
             Text(
               label,
-              style: const TextStyle(
-                  fontSize: 11, color: AppColors.textMuted),
+              style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
           ],
         ),
@@ -251,8 +250,7 @@ Widget _buildStatsRow() {
             ),
             if (badge != null) ...[
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppColors.accent1,
                   borderRadius: BorderRadius.circular(10),
@@ -279,9 +277,13 @@ Widget _buildStatsRow() {
     );
   }
 
+  // --- ĐÂY LÀ HÀM ĐÃ SỬA ---
   Widget _buildLogoutItem(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        Navigator.pushReplacementNamed(context, AppRoutes.login);
+      },
+      behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: const BoxDecoration(
@@ -289,6 +291,7 @@ Widget _buildStatsRow() {
         ),
         child: Row(
           children: [
+            // Icon Đăng xuất
             Container(
               width: 40,
               height: 40,
@@ -310,6 +313,7 @@ Widget _buildStatsRow() {
                 ),
               ),
             ),
+            // Mũi tên chỉ sang phải
             const Icon(
               Icons.chevron_right_rounded,
               color: AppColors.statusCancelledText,
