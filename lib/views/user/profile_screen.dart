@@ -116,22 +116,28 @@ class ProfileScreen extends StatelessWidget {
             style: TextStyle(fontSize: 13, color: AppColors.textMuted),
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.65),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.accent1.withOpacity(0.4),
-                width: 1.5,
-              ),
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(
+              context,
+              AppRoutes.customerProfileEdit,
             ),
-            child: const Text(
-              '✏️   Chỉnh sửa hồ sơ',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: AppColors.accent1,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.65),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: AppColors.accent1.withOpacity(0.4),
+                  width: 1.5,
+                ),
+              ),
+              child: const Text(
+                '✏️   Chỉnh sửa hồ sơ',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.accent1,
+                ),
               ),
             ),
           ),

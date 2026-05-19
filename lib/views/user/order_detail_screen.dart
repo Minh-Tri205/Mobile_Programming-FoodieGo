@@ -91,7 +91,16 @@ class OrderDetailScreen extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // 2. Danh sách món — khớp order_items SQL
+                    // 2. Phương thức thanh toán
+                    _sectionTitle('Phương thức thanh toán'),
+                    _infoCard(children: [
+                      _infoRow(Icons.payment_outlined, 'Phương thức',
+                          order.paymentMethod.label),
+                    ]),
+
+                    const SizedBox(height: 16),
+
+                    // 3. Danh sách món — khớp order_items SQL
                     _sectionTitle('Món đã đặt'),
                     _infoCard(
                       children: [
@@ -162,7 +171,7 @@ class OrderDetailScreen extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // 3. Tổng tiền — khớp total_amount, delivery_fee, discount_amount SQL
+                    // 4. Tổng tiền — khớp total_amount, delivery_fee, discount_amount SQL
                     _sectionTitle('Thanh toán'),
                     _infoCard(children: [
                       _totalRow('Tạm tính',
@@ -188,7 +197,7 @@ class OrderDetailScreen extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // 4. Thời gian — khớp created_at SQL
+                    // 5. Thời gian — khớp created_at SQL
                     _infoCard(children: [
                       _infoRow(Icons.access_time_outlined, 'Thời gian đặt',
                           order.createdAt),

@@ -2,16 +2,18 @@
 // THÊM MỚI so với bản cũ:
 //   - Chọn phương thức thanh toán: COD hoặc Chuyển khoản
 //   - Khi chọn Chuyển khoản: hiện QR code + thông tin tài khoản
+//   - Chọn mã giảm giá từ danh sách
 // Logic cũ (địa chỉ, phone, note, voucher, summary) giữ nguyên 100%
 
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../models/cart_model.dart';
+import '../../../models/order_model.dart';
+import '../../../models/bank_transfer_model.dart';
+import '../../../models/promotion_model.dart';
 import '../../../widgets/common/primary_button.dart';
-
-// Enum phương thức thanh toán
-enum PaymentMethod { cod, transfer }
+import '../../../widgets/coupons/coupon_selector_widget.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -31,6 +33,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   // ✅ THÊM MỚI: Phương thức thanh toán, mặc định COD
   PaymentMethod _paymentMethod = PaymentMethod.cod;
+  
+  // ✅ THÊM MỚI: Mã giảm giá từ promotions
+  PromotionModel? _selectedPromotion;
 
   @override
   void dispose() {
@@ -73,7 +78,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     // ✅ THÊM MỚI: Nếu chọn chuyển khoản → hiện dialog xác nhận đã chuyển
-    if (_paymentMethod == PaymentMethod.transfer) {
+    if (_paymentMethod == PaymentMethod.bankTransfer) {
       _showTransferConfirmDialog();
     } else {
       Navigator.pushReplacementNamed(context, AppRoutes.tracking);
@@ -82,6 +87,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   // ✅ THÊM MỚI: Dialog xác nhận đã chuyển khoản
   void _showTransferConfirmDialog() {
+    final discountAmount =
+        _selectedPromotion?.calculateDiscount(_cart.subtotal) ?? 0;
+    final finalAmount =
+        _cart.subtotal + _cart.deliveryFee - discountAmount;
+    
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -95,7 +105,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 color: AppColors.accent3, size: 56),
             const SizedBox(height: 12),
             Text(
-              'Bạn đã chuyển khoản\n${(_cart.total / 1000).toStringAsFixed(0)}.000đ\nthành công?',
+              'Bạn đã chuyển khoản\n${(finalAmount / 1000).toStringAsFixed(0)}.000đ\nthành công?',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 15, height: 1.5),
             ),
@@ -192,9 +202,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                     const SizedBox(height: 20),
 
-                    // 3. Voucher (giữ nguyên)
+                    // 3. Mã giảm giá (UPDATED)
                     _buildSectionTitle('Mã giảm giá'),
-                    _buildVoucherRow(),
+                    CouponSelectorWidget(
+                      availableCoupons: PromotionModel.samplePromotions,
+                      selectedCoupon: _selectedPromotion,
+                      cartAmount: _cart.subtotal,
+                      onCouponSelected: (promotion) {
+                        setState(() {
+                          _selectedPromotion = promotion;
+                        });
+                      },
+                    ),
 
                     const SizedBox(height: 20),
 
@@ -203,7 +222,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     _buildPaymentSelector(),
 
                     // ✅ 5. THÊM MỚI: Hiện thông tin chuyển khoản nếu chọn
-                    if (_paymentMethod == PaymentMethod.transfer) ...[
+                    if (_paymentMethod == PaymentMethod.bankTransfer) ...[
                       const SizedBox(height: 12),
                       _buildTransferInfo(),
                     ],
@@ -222,11 +241,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             // Nút đặt hàng
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-              child: PrimaryButton(
-                label: _paymentMethod == PaymentMethod.cod
-                    ? 'Đặt hàng (COD)  •  ${(_cart.total / 1000).toStringAsFixed(0)}.000đ'
-                    : 'Xác nhận đã chuyển khoản  •  ${(_cart.total / 1000).toStringAsFixed(0)}.000đ',
-                onTap: _placeOrder,
+              child: Builder(
+                builder: (context) {
+                  final discountAmount =
+                      _selectedPromotion?.calculateDiscount(_cart.subtotal) ?? 0;
+                  final finalAmount =
+                      _cart.subtotal + _cart.deliveryFee - discountAmount;
+                  return PrimaryButton(
+                    label: _paymentMethod == PaymentMethod.cod
+                        ? 'Đặt hàng (COD)  •  ${(finalAmount / 1000).toStringAsFixed(0)}.000đ'
+                        : 'Xác nhận đã chuyển khoản  •  ${(finalAmount / 1000).toStringAsFixed(0)}.000đ',
+                    onTap: _placeOrder,
+                  );
+                },
               ),
             ),
           ],
@@ -247,7 +274,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
         const SizedBox(height: 10),
         _paymentOption(
-          method: PaymentMethod.transfer,
+          method: PaymentMethod.bankTransfer,
           icon: Icons.account_balance_outlined,
           title: 'Chuyển khoản ngân hàng',
           subtitle: 'Quét QR hoặc chuyển theo thông tin bên dưới',
@@ -337,6 +364,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   // ✅ THÊM MỚI: Thông tin chuyển khoản + QR giả lập
   Widget _buildTransferInfo() {
+    final discountAmount =
+        _selectedPromotion?.calculateDiscount(_cart.subtotal) ?? 0;
+    final finalAmount =
+        _cart.subtotal + _cart.deliveryFee - discountAmount;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -381,7 +413,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const SizedBox(height: 6),
           _transferRow(
             'Số tiền',
-            '${(_cart.total / 1000).toStringAsFixed(0)}.000đ',
+            '${(finalAmount / 1000).toStringAsFixed(0)}.000đ',
             valueColor: AppColors.accent1,
             valueBold: true,
           ),
@@ -592,6 +624,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildSummaryCard() {
+    final discountAmount = _selectedPromotion?.calculateDiscount(_cart.subtotal) ?? 0;
+    final finalAmount = _cart.subtotal + _cart.deliveryFee - discountAmount;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -605,17 +640,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const SizedBox(height: 7),
           _row('Phí giao hàng',
               '${(_cart.deliveryFee / 1000).toStringAsFixed(0)}.000đ'),
-          const SizedBox(height: 7),
-          _row(
-            'Giảm giá',
-            '-${(_cart.discountAmount / 1000).toStringAsFixed(0)}.000đ',
-            valueColor:
-                _voucherApplied ? AppColors.accent3 : AppColors.textMuted,
-          ),
+          if (discountAmount > 0) ...[
+            const SizedBox(height: 7),
+            _row(
+              'Giảm giá${_selectedPromotion != null ? " (${_selectedPromotion!.name})" : ""}',
+              '-${(discountAmount / 1000).toStringAsFixed(0)}.000đ',
+              valueColor: AppColors.accent3,
+            ),
+          ],
           const Divider(color: Color(0x33FF8C69), height: 20),
           _row(
             'Tổng cộng',
-            '${(_cart.total / 1000).toStringAsFixed(0)}.000đ',
+            '${(finalAmount / 1000).toStringAsFixed(0)}.000đ',
             isTotal: true,
           ),
         ],
