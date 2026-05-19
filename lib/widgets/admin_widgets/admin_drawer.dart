@@ -5,6 +5,7 @@ import 'package:doancuoiki/views/admin/admin_orders_screen.dart';
 import 'package:doancuoiki/views/admin/admin_products_screen.dart';
 import 'package:doancuoiki/views/admin/admin_statistics_screen.dart';
 import 'package:doancuoiki/views/admin/admin_users_screen.dart';
+import 'package:doancuoiki/views/admin/admin_settings_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -81,7 +82,8 @@ class AdminDrawer extends StatelessWidget {
             const AdminStatisticsScreen(),
           ),
           const Divider(color: AppColors.divider),
-          _buildDrawerItem(context, Icons.settings_rounded, 'Cài đặt'),
+          _buildDrawerItem(context, Icons.settings_rounded, 'Cài đặt',
+               const AdminSettingsScreen()),
           ListTile(
             leading: const Icon(
               Icons.logout_rounded,
