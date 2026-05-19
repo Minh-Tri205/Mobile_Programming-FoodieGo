@@ -8,10 +8,9 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../models/cart_model.dart';
+import '../../../models/order_model.dart';
+import '../../../models/bank_transfer_model.dart';
 import '../../../widgets/common/primary_button.dart';
-
-// Enum phương thức thanh toán
-enum PaymentMethod { cod, transfer }
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -73,7 +72,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     // ✅ THÊM MỚI: Nếu chọn chuyển khoản → hiện dialog xác nhận đã chuyển
-    if (_paymentMethod == PaymentMethod.transfer) {
+    if (_paymentMethod == PaymentMethod.bankTransfer) {
       _showTransferConfirmDialog();
     } else {
       Navigator.pushReplacementNamed(context, AppRoutes.tracking);
@@ -203,7 +202,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     _buildPaymentSelector(),
 
                     // ✅ 5. THÊM MỚI: Hiện thông tin chuyển khoản nếu chọn
-                    if (_paymentMethod == PaymentMethod.transfer) ...[
+                    if (_paymentMethod == PaymentMethod.bankTransfer) ...[
                       const SizedBox(height: 12),
                       _buildTransferInfo(),
                     ],
@@ -247,7 +246,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
         const SizedBox(height: 10),
         _paymentOption(
-          method: PaymentMethod.transfer,
+          method: PaymentMethod.bankTransfer,
           icon: Icons.account_balance_outlined,
           title: 'Chuyển khoản ngân hàng',
           subtitle: 'Quét QR hoặc chuyển theo thông tin bên dưới',

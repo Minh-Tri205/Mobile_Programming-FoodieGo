@@ -3,6 +3,41 @@ import 'package:flutter/material.dart';
 // Khớp đúng với CHECK constraint trong SQL
 enum OrderStatus { pending, confirmed, preparing, delivering, completed, cancelled }
 
+// Payment method enum
+enum PaymentMethod { cod, bankTransfer }
+
+// Extension for PaymentMethod
+extension PaymentMethodExtension on PaymentMethod {
+  String get label {
+    switch (this) {
+      case PaymentMethod.cod:
+        return 'Thanh toán khi nhận hàng (COD)';
+      case PaymentMethod.bankTransfer:
+        return 'Chuyển khoản ngân hàng';
+    }
+  }
+
+  String get value {
+    switch (this) {
+      case PaymentMethod.cod:
+        return 'COD';
+      case PaymentMethod.bankTransfer:
+        return 'BANK_TRANSFER';
+    }
+  }
+
+  static PaymentMethod fromString(String value) {
+    switch (value.toUpperCase()) {
+      case 'COD':
+        return PaymentMethod.cod;
+      case 'BANK_TRANSFER':
+        return PaymentMethod.bankTransfer;
+      default:
+        return PaymentMethod.cod;
+    }
+  }
+}
+
 class OrderItemModel {
   final int foodId;
   final String foodName;
@@ -37,6 +72,9 @@ class OrderModel {
   final String? voucherCode; // để hiển thị UI
   final double discountAmount;
 
+  // Payment method
+  final PaymentMethod paymentMethod;
+
   final OrderStatus status;
   final double totalAmount;
   final List<OrderItemModel> items;
@@ -53,6 +91,7 @@ class OrderModel {
     this.voucherId,
     this.voucherCode,
     this.discountAmount = 0,
+    this.paymentMethod = PaymentMethod.cod,
     required this.status,
     required this.totalAmount,
     required this.items,
@@ -74,6 +113,7 @@ class OrderModel {
       deliveryFee: 15000,
       voucherCode: 'GIAM10K',
       discountAmount: 10000,
+      paymentMethod: PaymentMethod.cod,
       status: OrderStatus.delivering,
       totalAmount: 160000,
       createdAt: 'Hôm nay 09:41',
@@ -102,6 +142,7 @@ class OrderModel {
       deliveryPhone: '0901234567',
       deliveryFee: 15000,
       discountAmount: 0,
+      paymentMethod: PaymentMethod.bankTransfer,
       status: OrderStatus.preparing,
       totalAmount: 100000,
       createdAt: 'Hôm nay 08:20',
@@ -124,6 +165,7 @@ class OrderModel {
       deliveryFee: 15000,
       discountAmount: 10000,
       voucherCode: 'GIAM10K',
+      paymentMethod: PaymentMethod.cod,
       status: OrderStatus.completed,
       totalAmount: 200000,
       createdAt: 'Hôm qua 19:30',
@@ -152,6 +194,7 @@ class OrderModel {
       deliveryPhone: '0901234567',
       deliveryFee: 15000,
       discountAmount: 0,
+      paymentMethod: PaymentMethod.bankTransfer,
       status: OrderStatus.cancelled,
       totalAmount: 75000,
       createdAt: '03/04 12:00',
