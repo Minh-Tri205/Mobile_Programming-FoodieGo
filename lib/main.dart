@@ -32,6 +32,9 @@
 
 // }
 
+import 'package:doancuoiki/data/providers/user_provider.dart';
+import 'package:doancuoiki/data/repositories/user_repository.dart';
+import 'package:doancuoiki/data/services/user_service.dart';
 import 'package:doancuoiki/views/admin/admin_dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -62,6 +65,9 @@ void main() {
           create: (_) =>
               CategoryProvider(CategoryRepository(CategoryService())),
         ),
+        ChangeNotifierProvider(
+          create: (_) => UserProvider(UserRepository(UserService())),
+        ),
       ],
 
       child: const FoodieGoApp(),
@@ -81,7 +87,7 @@ class FoodieGoApp extends StatelessWidget {
 
       theme: AppTheme.lightTheme,
 
-      initialRoute: AppRoutes.adminCategories,
+      initialRoute: AppRoutes.login,
 
       onGenerateRoute: AppRouter.generateRoute,
     );

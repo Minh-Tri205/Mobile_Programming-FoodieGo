@@ -71,4 +71,5 @@ Future<void> deleteCategory(int id) async {
       rethrow;
     }
   }
+
 }
