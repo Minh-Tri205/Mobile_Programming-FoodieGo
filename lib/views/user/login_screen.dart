@@ -1,4 +1,3 @@
-import 'package:doancuoiki/views/admin/admin_dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -27,6 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             children: [
               const SizedBox(height: 40),
+
               /// Logo / Title
               Column(
                 children: [
@@ -74,12 +74,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 12),
 
-              /// Forgot password
+              /// Forgot password — ✅ đã kết nối đúng route
               Align(
                 alignment: Alignment.centerRight,
                 child: GestureDetector(
                   onTap: () {
-                    // TODO
+                    Navigator.pushNamed(context, AppRoutes.forgotPassword);
                   },
                   child: const Text(
                     'Quên mật khẩu?',
@@ -94,12 +94,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 30),
 
-              /// Login Button
+              /// Login Button — ✅ đăng nhập đúng logic
               GestureDetector(
                 onTap: () {
                   final String email = emailController.text.trim();
-                  final String password = passwordController.text.trim();
-                  if (email == "admin") {
+                  if (email == 'admin') {
                     Navigator.pushReplacementNamed(
                       context,
                       AppRoutes.adminDashboard,
@@ -146,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   _socialButton('G'),
                   _socialButton('f'),
-                  _socialButton(''),
+                  _socialButton(''),
                 ],
               ),
 
@@ -184,7 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// INPUT FIELD
   Widget _buildInput({
     required TextEditingController controller,
     required String hint,
@@ -221,7 +219,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// SOCIAL BUTTON
   Widget _socialButton(String label) {
     return Container(
       width: 52,

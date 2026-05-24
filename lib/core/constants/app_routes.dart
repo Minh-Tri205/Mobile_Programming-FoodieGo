@@ -46,4 +46,6 @@ class AppRoutes {
 
   // Settings
   static const String adminSettings = '/admin/settings';
+
+  static const String forgotPassword = '/forgot-password';
 }

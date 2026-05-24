@@ -29,4 +29,5 @@ class FoodieGoApp extends StatelessWidget {
       onGenerateRoute: AppRouter.generateRoute,
     );
   }
+  
 }

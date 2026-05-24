@@ -1,4 +1,7 @@
-// lib/views/food_detail_screen.dart
+// lib/views/user/food_detail_screen.dart
+// THÊM MỚI: Nút yêu thích (❤️) ở góc trên phải ảnh hero
+// Không sửa bất kỳ logic cũ nào, chỉ thêm _isFavorite state + icon button
+
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
@@ -15,12 +18,16 @@ class FoodDetailScreen extends StatefulWidget {
 class _FoodDetailScreenState extends State<FoodDetailScreen> {
   int _quantity = 1;
 
+  // ✅ THÊM MỚI: trạng thái yêu thích
+  bool _isFavorite = false;
+
   // Dữ liệu reviews tĩnh — khớp với bảng reviews trong SQL
   final List<Map<String, String>> _reviews = [
     {
       'name': 'Nguyễn Lan Anh',
       'rating': '5',
-      'comment': 'Ngon tuyệt vời! Nước dùng đậm đà, thịt mềm. Sẽ đặt lại lần nữa.',
+      'comment':
+          'Ngon tuyệt vời! Nước dùng đậm đà, thịt mềm. Sẽ đặt lại lần nữa.',
     },
     {
       'name': 'Trần Minh Khoa',
@@ -79,28 +86,68 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
         ),
         Container(
           height: 240,
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.2),
-          ),
+          decoration: BoxDecoration(color: Colors.black.withOpacity(0.2)),
         ),
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.85),
-                  shape: BoxShape.circle,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Nút back (giữ nguyên)
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.85),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 16,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                 ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  size: 16,
-                  color: AppColors.textPrimary,
+
+                // ✅ THÊM MỚI: Nút yêu thích
+                GestureDetector(
+                  onTap: () {
+                    setState(() => _isFavorite = !_isFavorite);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          _isFavorite
+                              ? '❤️ Đã thêm vào yêu thích!'
+                              : '🤍 Đã bỏ khỏi yêu thích',
+                        ),
+                        duration: const Duration(seconds: 1),
+                        backgroundColor: _isFavorite
+                            ? Colors.redAccent
+                            : AppColors.textMuted,
+                      ),
+                    );
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _isFavorite
+                          ? Colors.red.shade50
+                          : Colors.white.withOpacity(0.85),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _isFavorite ? Icons.favorite : Icons.favorite_border,
+                      size: 20,
+                      color: _isFavorite ? Colors.red : AppColors.textMuted,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
@@ -129,9 +176,11 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              // Hiển thị danh mục thay cho rating (không có trong SQL)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.pastel3,
                   borderRadius: BorderRadius.circular(14),
@@ -150,7 +199,6 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
 
           const SizedBox(height: 8),
 
-          // Mô tả
           Text(
             food.description ?? 'Không có mô tả.',
             style: const TextStyle(
@@ -162,7 +210,6 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
 
           const SizedBox(height: 12),
 
-          // Thống kê: đã bán
           Row(
             children: [
               _metaChip('🔥 Đã bán: ${food.totalSold}'),
@@ -173,7 +220,6 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
 
           const SizedBox(height: 20),
 
-          // Giá + số lượng
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -191,7 +237,6 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
 
           const SizedBox(height: 24),
 
-          // Đánh giá — khớp bảng reviews trong SQL
           const Text(
             'Đánh giá khách hàng',
             style: TextStyle(
@@ -225,7 +270,9 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () { if (_quantity > 1) setState(() => _quantity--); },
+            onTap: () {
+              if (_quantity > 1) setState(() => _quantity--);
+            },
             child: _circleButton('−'),
           ),
           SizedBox(
@@ -254,7 +301,10 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
-      child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 18)),
+      child: Text(
+        text,
+        style: const TextStyle(color: Colors.white, fontSize: 18),
+      ),
     );
   }
 
@@ -270,7 +320,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            backgroundColor: _reviewAvatarColors[index % _reviewAvatarColors.length],
+            backgroundColor:
+                _reviewAvatarColors[index % _reviewAvatarColors.length],
             child: Text(
               r['name']![0],
               style: const TextStyle(fontWeight: FontWeight.w700),
@@ -281,10 +332,11 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(r['name']!,
-                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(
+                  r['name']!,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 2),
-                // Hiển thị sao bằng icon thay emoji
                 Row(
                   children: List.generate(
                     5,
@@ -296,9 +348,13 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(r['comment']!,
-                    style: const TextStyle(
-                        fontSize: 13, color: AppColors.textMuted)),
+                Text(
+                  r['comment']!,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textMuted,
+                  ),
+                ),
               ],
             ),
           ),

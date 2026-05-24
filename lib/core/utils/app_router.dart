@@ -26,6 +26,7 @@ import 'package:doancuoiki/views/user/profile_screen.dart';
 import 'package:doancuoiki/views/user/notifications_screen.dart';
 import 'package:doancuoiki/views/user/order_detail_screen.dart';
 import 'package:doancuoiki/views/user/review_screen.dart';
+import 'package:doancuoiki/views/user/forgot_password_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -41,16 +42,12 @@ class AppRouter {
       case AppRoutes.search:
         return _slide(const SearchScreen(), settings);
       case AppRoutes.foodDetail:
-        // Truyền arguments qua settings, đọc bên trong FoodDetailScreen
-        // bằng: final food = ModalRoute.of(context)!.settings.arguments as FoodModel;
         return _slide(const FoodDetailScreen(), settings);
       case AppRoutes.cart:
         return _slide(const CartScreen(), settings);
       case AppRoutes.checkout:
         return _slide(const CheckoutScreen(), settings);
       case AppRoutes.tracking:
-        // Đọc order bên trong TrackingScreen
-        // bằng: final order = ModalRoute.of(context)!.settings.arguments as OrderModel;
         return _slide(const TrackingScreen(), settings);
       case AppRoutes.orders:
         return _slide(const OrdersScreen(), settings);
@@ -63,13 +60,15 @@ class AppRouter {
       case AppRoutes.review:
         return _slide(const ReviewScreen(), settings);
 
+      // ✅ THÊM MỚI: Quên mật khẩu
+      case AppRoutes.forgotPassword:
+        return _slide(const ForgotPasswordScreen(), settings);
+
       // Admin Routes
       case AppRoutes.adminDashboard:
         return _slide(const AdminDashboardScreen(), settings);
       case AppRoutes.adminOrders:
         return _slide(const AdminOrdersScreen(), settings);
-      // case AppRoutes.adminOrderDetail:
-      //   return _slide(const AdminOrderDetailScreen(), settings);
       case AppRoutes.adminProducts:
         return _slide(const AdminProductsScreen(), settings);
       case AppRoutes.adminAddProduct:
@@ -81,7 +80,6 @@ class AppRouter {
       case AppRoutes.adminUsers:
         return _slide(const AdminUsersScreen(), settings);
       case AppRoutes.adminUserDetail:
-        // Lấy userId từ arguments được truyền qua Navigator
         final userId = settings.arguments as int;
         return _slide(AdminUserDetailScreen(userId: userId), settings);
       case AppRoutes.adminUserHistory:
@@ -89,10 +87,7 @@ class AppRouter {
         return _slide(AdminUserHistoryScreen(userId: userId), settings);
       case AppRoutes.adminStatistics:
         return _slide(const AdminStatisticsScreen(), settings);
-      // case AppRoutes.adminNotifications:
-      //   return _slide(const AdminNotificationsScreen(), settings);
-      // case AppRoutes.adminSettings:
-      //   return _slide(const AdminSettingsScreen(), settings);
+
       default:
         return _slide(const SplashScreen(), settings);
     }
@@ -101,10 +96,8 @@ class AppRouter {
   static PageRouteBuilder _slide(Widget page, RouteSettings settings) {
     return PageRouteBuilder(
       settings: settings,
-      pageBuilder: (_, __, ___) =>
-          page, // ← dùng _ __ ___ vẫn OK nếu Dart version cũ
-      transitionsBuilder: (_, animation, _, child) {
-        // ← sửa __ thành _
+      pageBuilder: (_, __, ___) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
         const begin = Offset(1.0, 0.0);
         const end = Offset.zero;
         final tween = Tween(
