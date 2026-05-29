@@ -48,6 +48,14 @@ import 'data/providers/category_provider.dart';
 import 'data/repositories/category_repository.dart';
 import 'data/services/category_service.dart';
 
+import 'data/providers/order_provider.dart';
+import 'data/repositories/order_repository.dart';
+import 'data/services/order_service.dart';
+
+import 'data/providers/food_provider.dart';
+import 'data/repositories/food_repository.dart';
+import 'data/services/food_service.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -67,6 +75,12 @@ void main() {
         ),
         ChangeNotifierProvider(
           create: (_) => UserProvider(UserRepository(UserService())),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => OrderProvider(OrderRepository(OrderService())),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => FoodProvider(FoodRepository(FoodService())),
         ),
       ],
 

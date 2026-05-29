@@ -1,6 +1,7 @@
-import 'package:doancuoiki/widgets/admin_widgets/app_search_bar.dart';
+import 'package:doancuoiki/data/providers/user_provider.dart';
 import 'package:doancuoiki/widgets/notification/app_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
@@ -28,14 +29,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> login() async {
     final email = emailController.text.trim();
-
     final password = passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Vui lòng nhập đầy đủ')));
-
       return;
     }
 
@@ -50,6 +49,8 @@ class _LoginScreenState extends State<LoginScreen> {
         AppSnackbar.showError(context, "Email hoặc mật khẩu không chính xác");
         return;
       }
+
+      context.read<UserProvider>().setCurrentUserId(user.userId);
 
       // CHECK ROLE
       if (user.role?.toLowerCase() == 'admin') {

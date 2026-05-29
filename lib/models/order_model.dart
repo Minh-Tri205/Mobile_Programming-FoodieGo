@@ -1,82 +1,219 @@
 import 'package:flutter/material.dart';
+import '../core/constants/app_colors.dart';
+import 'order_item_model.dart';
 
-// Khớp đúng với CHECK constraint trong SQL
-enum OrderStatus { pending, confirmed, preparing, delivering, completed, cancelled }
+// ============================================================
+// OrderStatus — khớp CHECK constraint trong SQL:
+//   'pending', 'confirmed', 'preparing', 'shipping', 'completed', 'cancelled'
+// Dùng class chứa hằng String để giữ cú pháp OrderStatus.completed
+// như UI cũ mà vẫn lưu dưới dạng String (đúng schema).
+// ============================================================
+class OrderStatus {
+  static const String pending = 'pending';
+  static const String confirmed = 'confirmed';
+  static const String preparing = 'preparing';
+  static const String shipping = 'shipping';
+  static const String completed = 'completed';
+  static const String cancelled = 'cancelled';
 
-class OrderItemModel {
-  final int foodId;
-  final String foodName;
-  final String? foodImageUrl;
-  final int quantity;
-  final double unitPrice;
+  // Giữ tương thích với code cũ dùng OrderStatus.delivering
+  static const String delivering = shipping;
+}
 
-  const OrderItemModel({
-    required this.foodId,
-    required this.foodName,
-    this.foodImageUrl,
-    required this.quantity,
-    required this.unitPrice,
-  });
+extension OrderStatusLabel on String? {
+  String get label {
+    switch (this) {
+      case OrderStatus.pending:
+        return 'Chờ xác nhận';
+      case OrderStatus.confirmed:
+        return 'Đã xác nhận';
+      case OrderStatus.preparing:
+        return 'Đang chuẩn bị';
+      case OrderStatus.shipping:
+        return 'Đang giao';
+      case OrderStatus.completed:
+        return 'Hoàn thành';
+      case OrderStatus.cancelled:
+        return 'Đã huỷ';
+      default:
+        return 'Không rõ';
+    }
+  }
 
-  double get subtotal => quantity * unitPrice;
+  Color get bgColor {
+    switch (this) {
+      case OrderStatus.pending:
+        return AppColors.statusPending;
+      case OrderStatus.confirmed:
+        return AppColors.statusConfirmed;
+      case OrderStatus.preparing:
+        return AppColors.statusPreparing;
+      case OrderStatus.shipping:
+        return AppColors.statusDelivering;
+      case OrderStatus.completed:
+        return AppColors.statusDelivered;
+      case OrderStatus.cancelled:
+        return AppColors.statusCancelled;
+      default:
+        return AppColors.statusPending;
+    }
+  }
+
+  Color get textColor {
+    switch (this) {
+      case OrderStatus.pending:
+        return AppColors.statusPendingText;
+      case OrderStatus.confirmed:
+        return AppColors.statusConfirmedText;
+      case OrderStatus.preparing:
+        return AppColors.statusPreparingText;
+      case OrderStatus.shipping:
+        return AppColors.statusDeliveringText;
+      case OrderStatus.completed:
+        return AppColors.statusDeliveredText;
+      case OrderStatus.cancelled:
+        return AppColors.statusCancelledText;
+      default:
+        return AppColors.statusPendingText;
+    }
+  }
 }
 
 class OrderModel {
-  final int orderId;
-  final String orderCode;
+  final int? orderId;
   final int userId;
 
-  // Thông tin giao hàng — khớp SQL
+  final String orderCode;
+
+  final String recipientName;
   final String deliveryAddress;
   final String deliveryPhone;
+
   final double deliveryFee;
+
   final String? note;
 
-  // Khuyến mãi — khớp SQL
+  final int? addressId;
+
+  final String paymentMethod;
+
   final int? voucherId;
-  final String? voucherCode; // để hiển thị UI
+  final String? voucherCode;
+
   final double discountAmount;
 
-  final OrderStatus status;
-  final double totalAmount;
-  final List<OrderItemModel> items;
-  final String createdAt;
+  final String status;
 
-  const OrderModel({
-    required this.orderId,
-    required this.orderCode,
+  final double totalAmount;
+
+  final DateTime? createdAt;
+
+  final DateTime? updatedAt;
+
+  // order_items đi kèm — lấy qua JOIN ở backend
+  final List<OrderItemModel> items;
+
+  OrderModel({
+    this.orderId,
     required this.userId,
+    required this.orderCode,
+    required this.recipientName,
     required this.deliveryAddress,
     required this.deliveryPhone,
     this.deliveryFee = 0,
     this.note,
+    this.addressId,
+    this.paymentMethod = 'cash',
     this.voucherId,
     this.voucherCode,
     this.discountAmount = 0,
-    required this.status,
-    required this.totalAmount,
-    required this.items,
-    required this.createdAt,
+    this.status = OrderStatus.pending,
+    this.totalAmount = 0,
+    this.createdAt,
+    this.updatedAt,
+    this.items = const [],
   });
 
-  // Tóm tắt món ăn để hiển thị ở danh sách đơn hàng
+  // Tóm tắt món ăn hiển thị danh sách đơn hàng
   String get itemsSummary {
+    if (items.isEmpty) return '';
     return items.map((e) => '${e.foodName} x${e.quantity}').join(', ');
   }
 
-  static List<OrderModel> sampleOrders = [
+  factory OrderModel.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'] ?? json['orderItems'];
+    return OrderModel(
+      orderId: json['orderId'],
+      userId: json['userId'] ?? 0,
+      orderCode: json['orderCode'] ?? '',
+      recipientName: json['recipientName'] ?? '',
+      deliveryAddress: json['deliveryAddress'] ?? '',
+      deliveryPhone: json['deliveryPhone'] ?? '',
+      deliveryFee: (json['deliveryFee'] ?? 0).toDouble(),
+      note: json['note'],
+      addressId: json['addressId'],
+      paymentMethod: json['paymentMethod'] ?? 'cash',
+      voucherId: json['voucherId'],
+      voucherCode: json['voucherCode'],
+      discountAmount: (json['discountAmount'] ?? 0).toDouble(),
+      status: json['status'] ?? OrderStatus.pending,
+      totalAmount: (json['totalAmount'] ?? 0).toDouble(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'].toString())
+          : null,
+      items: rawItems is List
+          ? rawItems
+                .map((e) => OrderItemModel.fromJson(e as Map<String, dynamic>))
+                .toList()
+          : const [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'orderId': orderId,
+      'userId': userId,
+      'orderCode': orderCode,
+      'recipientName': recipientName,
+      'deliveryAddress': deliveryAddress,
+      'deliveryPhone': deliveryPhone,
+      'deliveryFee': deliveryFee,
+      'note': note,
+      'addressId': addressId,
+      'paymentMethod': paymentMethod,
+      'voucherId': voucherId,
+      'voucherCode': voucherCode,
+      'discountAmount': discountAmount,
+      'status': status,
+      'totalAmount': totalAmount,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'items': items.map((e) => e.toJson()).toList(),
+    };
+  }
+
+  // ============================================================
+  // SAMPLE DATA — gán cứng tạm thời để UI chạy
+  // Khi backend hoàn thiện, thay thế bằng dữ liệu thật qua provider.
+  // ============================================================
+  static final List<OrderModel> sampleOrders = [
     OrderModel(
       orderId: 1,
       orderCode: 'DH-001',
       userId: 1,
+      recipientName: 'Nguyễn Văn A',
       deliveryAddress: '123 Nguyễn Huệ, Quận 1, TP.HCM',
       deliveryPhone: '0901234567',
       deliveryFee: 15000,
       voucherCode: 'GIAM10K',
       discountAmount: 10000,
-      status: OrderStatus.delivering,
+      status: OrderStatus.shipping,
       totalAmount: 160000,
-      createdAt: 'Hôm nay 09:41',
+      paymentMethod: 'cash',
+      createdAt: DateTime.now(),
       items: const [
         OrderItemModel(
           foodId: 1,
@@ -98,13 +235,15 @@ class OrderModel {
       orderId: 2,
       orderCode: 'DH-002',
       userId: 1,
+      recipientName: 'Nguyễn Văn A',
       deliveryAddress: '45 Lê Lợi, Quận 1, TP.HCM',
       deliveryPhone: '0901234567',
       deliveryFee: 15000,
       discountAmount: 0,
       status: OrderStatus.preparing,
       totalAmount: 100000,
-      createdAt: 'Hôm nay 08:20',
+      paymentMethod: 'momo',
+      createdAt: DateTime.now(),
       items: const [
         OrderItemModel(
           foodId: 3,
@@ -119,6 +258,7 @@ class OrderModel {
       orderId: 3,
       orderCode: 'DH-003',
       userId: 1,
+      recipientName: 'Nguyễn Văn A',
       deliveryAddress: '78 Trần Hưng Đạo, Quận 5',
       deliveryPhone: '0901234567',
       deliveryFee: 15000,
@@ -126,7 +266,8 @@ class OrderModel {
       voucherCode: 'GIAM10K',
       status: OrderStatus.completed,
       totalAmount: 200000,
-      createdAt: 'Hôm qua 19:30',
+      paymentMethod: 'cash',
+      createdAt: DateTime.now().subtract(const Duration(days: 1)),
       items: const [
         OrderItemModel(
           foodId: 2,
@@ -148,13 +289,15 @@ class OrderModel {
       orderId: 4,
       orderCode: 'DH-004',
       userId: 1,
+      recipientName: 'Nguyễn Văn A',
       deliveryAddress: '12 Hai Bà Trưng, Quận 3',
       deliveryPhone: '0901234567',
       deliveryFee: 15000,
       discountAmount: 0,
       status: OrderStatus.cancelled,
       totalAmount: 75000,
-      createdAt: '03/04 12:00',
+      paymentMethod: 'cash',
+      createdAt: DateTime.now().subtract(const Duration(days: 2)),
       items: const [
         OrderItemModel(
           foodId: 4,
@@ -168,40 +311,25 @@ class OrderModel {
   ];
 }
 
-// Helper để hiển thị text và màu trạng thái — dùng chung toàn app
-extension OrderStatusExtension on OrderStatus {
-  String get label {
-    switch (this) {
-      case OrderStatus.pending:     return 'Chờ xác nhận';
-      case OrderStatus.confirmed:   return 'Đã xác nhận';
-      case OrderStatus.preparing:   return 'Đang chuẩn bị';
-      case OrderStatus.delivering:  return 'Đang giao';
-      case OrderStatus.completed:   return 'Hoàn thành';
-      case OrderStatus.cancelled:   return 'Đã huỷ';
-    }
-  }
-
-  // Màu nền badge
-  Color get bgColor {
-    switch (this) {
-      case OrderStatus.pending:     return const Color(0xFFF5F5F5);
-      case OrderStatus.confirmed:   return const Color(0xFFE8F5E9);
-      case OrderStatus.preparing:   return const Color(0xFFFFF3CD);
-      case OrderStatus.delivering:  return const Color(0xFFD4E8FF);
-      case OrderStatus.completed:   return const Color(0xFFD9F2E6);
-      case OrderStatus.cancelled:   return const Color(0xFFFCEBEB);
-    }
-  }
-
-  // Màu chữ badge
-  Color get textColor {
-    switch (this) {
-      case OrderStatus.pending:     return const Color(0xFF616161);
-      case OrderStatus.confirmed:   return const Color(0xFF2E7D32);
-      case OrderStatus.preparing:   return const Color(0xFFE6A817);
-      case OrderStatus.delivering:  return const Color(0xFF185FA5);
-      case OrderStatus.completed:   return const Color(0xFF3B6D11);
-      case OrderStatus.cancelled:   return const Color(0xFFA32D2D);
-    }
-  }
-}
+// sId': addressId,
+//       'paymentMethod': paymentMethod,
+//       'voucherId': voucherId,
+//       'discountAmount': discountAmount,
+//       'status': status,
+//       'totalAmount': totalAmount,
+//       'createdAt': createdAt?.toIso8601String(),
+//       'updatedAt': updatedAt?.toIso8601String(),
+//     };
+//   }
+// }
+// ': addressId,
+//       'paymentMethod': paymentMethod,
+//       'voucherId': voucherId,
+//       'discountAmount': discountAmount,
+//       'status': status,
+//       'totalAmount': totalAmount,
+//       'createdAt': createdAt?.toIso8601String(),
+//       'updatedAt': updatedAt?.toIso8601String(),
+//     };
+//   }
+// }

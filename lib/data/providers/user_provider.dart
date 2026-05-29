@@ -12,6 +12,12 @@ class UserProvider extends ChangeNotifier {
 
   bool isLoading = false;
 
+  UserModel? currentUser;
+
+  bool isLoadingProfile = false;
+
+  int? currentUserId;
+
   String? error;
 
   // GET ALL
@@ -27,6 +33,24 @@ class UserProvider extends ChangeNotifier {
     } finally {
       isLoading = false;
 
+      notifyListeners();
+    }
+  }
+
+  // GET BY ID
+  void setCurrentUserId(int id) {
+    currentUserId = id;
+    notifyListeners();
+  }
+
+  Future<void> fetchUserById(int id) async {
+    try {
+      isLoadingProfile = true;
+      notifyListeners();
+
+      currentUser = await repository.getUserById(id);
+    } finally {
+      isLoadingProfile = false;
       notifyListeners();
     }
   }
@@ -94,7 +118,8 @@ class UserProvider extends ChangeNotifier {
       rethrow;
     }
   }
-    Future<void> toggleStatus(int id) async {
+
+  Future<void> toggleStatus(int id) async {
     try {
       await repository.toggleStatus(id);
 
@@ -109,7 +134,7 @@ class UserProvider extends ChangeNotifier {
       notifyListeners();
     }
 
-      Future<void> deactivateUser(int id) async {
+    Future<void> deactivateUser(int id) async {
       try {
         await repository.deactivateUser(id);
 
@@ -125,7 +150,8 @@ class UserProvider extends ChangeNotifier {
       }
     }
   }
-    Future<void> activateUser(int id) async {
+
+  Future<void> activateUser(int id) async {
     try {
       await repository.activateUser(id);
 
@@ -140,7 +166,8 @@ class UserProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-    Future<void> changeRole(int id, String role) async {
+
+  Future<void> changeRole(int id, String role) async {
     try {
       await repository.changeRole(id, role);
 

@@ -8,6 +8,12 @@ import '../../../widgets/common/back_button_widget.dart';
 class TrackingScreen extends StatelessWidget {
   const TrackingScreen({super.key});
 
+  String _formatDate(DateTime? date) {
+    if (date == null) return '';
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(date.day)}/${two(date.month)}/${date.year} ${two(date.hour)}:${two(date.minute)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     // Nhận OrderModel từ arguments — khớp với cách truyền từ orders_screen
@@ -171,13 +177,13 @@ class TrackingScreen extends StatelessWidget {
   }
 
   // Các bước khớp đúng với status trong SQL:
-  // confirmed → preparing → delivering → completed
+  // confirmed → preparing → shipping → completed
   Widget _buildStepList(OrderModel order) {
     final bool isConfirmed = true; // đơn đã tạo thì luôn confirmed
     final bool isPreparing = order.status == OrderStatus.preparing ||
-        order.status == OrderStatus.delivering ||
+        order.status == OrderStatus.shipping ||
         order.status == OrderStatus.completed;
-    final bool isDelivering = order.status == OrderStatus.delivering ||
+    final bool isDelivering = order.status == OrderStatus.shipping ||
         order.status == OrderStatus.completed;
     final bool isCompleted = order.status == OrderStatus.completed;
 
@@ -185,7 +191,7 @@ class TrackingScreen extends StatelessWidget {
       {
         'icon': '✅',
         'title': 'Đơn hàng đã được xác nhận',
-        'time': '${order.createdAt}  •  Cửa hàng đã nhận đơn',
+        'time': '${_formatDate(order.createdAt)}  •  Cửa hàng đã nhận đơn',
         'done': isConfirmed,
         'active': false,
       },
@@ -201,7 +207,7 @@ class TrackingScreen extends StatelessWidget {
         'title': 'Đang giao hàng',
         'time': 'Tài xế đang trên đường',
         'done': isDelivering,
-        'active': order.status == OrderStatus.delivering,
+        'active': order.status == OrderStatus.shipping,
       },
       {
         'icon': '📦',

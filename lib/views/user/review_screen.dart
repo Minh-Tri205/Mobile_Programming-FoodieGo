@@ -40,6 +40,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Nhận OrderModel từ arguments; nếu không có thì dùng đơn mẫu cuối
     final order = ModalRoute.of(context)?.settings.arguments as OrderModel?
         ?? OrderModel.sampleOrders.last;
 
