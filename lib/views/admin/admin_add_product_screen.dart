@@ -1,6 +1,9 @@
 // lib/views/admin/admin_add_product_screen.dart
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -28,6 +31,10 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   CategoryModel? _selectedCategory;
   bool _isActive = true;
   bool _submitting = false;
+
+  // File anh duoc chon tu camera/gallery — neu khac null se upload multipart
+  String? _localFilePath;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -57,6 +64,10 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
 
     setState(() => _submitting = true);
 
+    // Neu co file local -> uu tien upload file, bo qua text URL
+    final hasLocalFile = _localFilePath != null && _localFilePath!.isNotEmpty;
+    final urlValue = _imageUrlCtrl.text.trim();
+
     final food = FoodModel(
       categoryId: _selectedCategory!.categoryId,
       categoryName: _selectedCategory!.name,
@@ -66,14 +77,18 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
           ? null
           : _descCtrl.text.trim(),
       stockQuantity: int.tryParse(_stockCtrl.text.trim()) ?? 0,
-      imageUrl: _imageUrlCtrl.text.trim().isEmpty
+      // Khi co file -> imageUrl = null de backend luu filename tu file
+      imageUrl: hasLocalFile
           ? null
-          : _imageUrlCtrl.text.trim(),
+          : (urlValue.isEmpty ? null : urlValue),
       isActive: _isActive,
     );
 
     try {
-      await context.read<FoodProvider>().createFood(food);
+      await context.read<FoodProvider>().createFood(
+            food,
+            localFilePath: hasLocalFile ? _localFilePath : null,
+          );
       if (!mounted) return;
       _toast('Đã thêm món "${food.name}"');
       Navigator.pop(context);
@@ -81,6 +96,172 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
       if (mounted) _toast('Lỗi: $e', error: true);
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  // =========================================================
+  // IMAGE PICKER — camera / gallery / URL
+  // =========================================================
+  void _showImagePickerSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                'Chọn ảnh món ăn',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _pickerTile(
+                icon: Icons.photo_camera_outlined,
+                iconBg: AppColors.pastel1,
+                iconColor: AppColors.accent1,
+                label: 'Chụp ảnh',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _pickFromCamera();
+                },
+              ),
+              const SizedBox(height: 10),
+              _pickerTile(
+                icon: Icons.photo_library_outlined,
+                iconBg: AppColors.pastel2,
+                iconColor: AppColors.accent2,
+                label: 'Chọn từ thư viện',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _pickFromGallery();
+                },
+              ),
+              if (_localFilePath != null) ...[
+                const SizedBox(height: 10),
+                _pickerTile(
+                  icon: Icons.delete_outline_rounded,
+                  iconBg: const Color(0xFFFFE5E5),
+                  iconColor: AppColors.statusCancelledText,
+                  label: 'Xoá ảnh đã chọn',
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    setState(() => _localFilePath = null);
+                  },
+                ),
+              ],
+              const SizedBox(height: 10),
+              _pickerTile(
+                icon: Icons.close_rounded,
+                iconBg: const Color(0xFFEFEFEF),
+                iconColor: AppColors.textMuted,
+                label: 'Huỷ',
+                onTap: () => Navigator.pop(sheetCtx),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _pickerTile({
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFAF7F4),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickFromCamera() async {
+    try {
+      final x = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 1280,
+      );
+      if (x != null) {
+        setState(() {
+          _localFilePath = x.path;
+          // Co file -> xoa URL de tranh nham lan
+          _imageUrlCtrl.clear();
+        });
+      }
+    } catch (e) {
+      _toast('Không mở được camera: $e', error: true);
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    try {
+      final x = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1280,
+      );
+      if (x != null) {
+        setState(() {
+          _localFilePath = x.path;
+          _imageUrlCtrl.clear();
+        });
+      }
+    } catch (e) {
+      _toast('Không mở được thư viện: $e', error: true);
     }
   }
 
@@ -245,7 +426,13 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     final letter = _firstLetter(_nameCtrl.text);
 
     Widget child;
-    if (url.isEmpty) {
+    if (_localFilePath != null && _localFilePath!.isNotEmpty) {
+      child = Image.file(
+        File(_localFilePath!),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _initialBox(letter),
+      );
+    } else if (url.isEmpty) {
       child = _initialBox(letter);
     } else if (url.startsWith('http')) {
       child = Image.network(
@@ -261,22 +448,90 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
       );
     }
 
-    return Container(
-      height: 160,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: child,
+    return GestureDetector(
+      onTap: _showImagePickerSheet,
+      child: Container(
+        height: 160,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: child,
+              ),
+            ),
+            // Camera icon button overlay
+            Positioned(
+              bottom: 10,
+              right: 10,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.accent1,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.photo_camera_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ),
+            // Badge "Đã chọn ảnh" khi co local file
+            if (_localFilePath != null)
+              Positioned(
+                top: 10,
+                left: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent3,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Ảnh đã chọn',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -304,7 +559,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Nhập URL ảnh ở dưới để xem trước',
+            'Chạm để chọn ảnh hoặc nhập URL ở dưới',
             style: TextStyle(
               fontSize: 11,
               color: AppColors.textMuted,

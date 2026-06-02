@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../data/providers/cart_provider.dart';
 import '../../../data/providers/category_provider.dart';
 import '../../../data/providers/food_provider.dart';
 import '../../../data/providers/user_provider.dart';
@@ -131,6 +132,84 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       bottomNavigationBar: const AppBottomNav(currentIndex: 0),
+      floatingActionButton: _buildCartFab(),
+    );
+  }
+
+  // =========================================================
+  // FAB GIO HANG — noi, co badge so luong
+  // =========================================================
+  Widget _buildCartFab() {
+    return Consumer<CartProvider>(
+      builder: (context, cart, _) {
+        final count = cart.totalQty;
+        return GestureDetector(
+          onTap: () => Navigator.pushNamed(context, AppRoutes.cart),
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [AppColors.accent1, Color(0xFFFFAB7E)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accent1.withOpacity(0.4),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                const Icon(
+                  Icons.shopping_cart_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
+                if (count > 0)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.accent1,
+                          width: 1.5,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        count > 99 ? '99+' : '$count',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.accent1,
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

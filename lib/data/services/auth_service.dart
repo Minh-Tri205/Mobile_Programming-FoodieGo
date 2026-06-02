@@ -13,31 +13,32 @@ class AuthService {
     return sha256.convert(utf8.encode(password)).toString();
   }
 
-  // LOGIN
+  // LOGIN — goi POST /api/User/login, backend tu hash + verify
+  // Tra ve UserModel khi thanh cong, null khi sai email/mat khau (401)
   Future<UserModel?> login(String email, String password) async {
-    final response = await http.get(Uri.parse(baseUrl));
+    final response = await http.post(
+      Uri.parse('$baseUrl/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email.trim(),
+        'password': password,
+      }),
+    );
 
     if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-
-      final users = data.map((e) => UserModel.fromJson(e)).toList();
-
-      final hashedPassword = hashPassword(password);
-
-      try {
-        final user = users.firstWhere(
-          (u) =>
-              u.email == email &&
-              u.passwordHash == hashedPassword &&
-              u.isActive != false,
-        );
-        return user;
-      } catch (e) {
-        return null;
-      }
+      final data = jsonDecode(response.body);
+      return UserModel.fromJson(data);
     }
 
-    return null;
+    // 401 = sai email/mat khau hoac bi khoa
+    if (response.statusCode == 401) {
+      return null;
+    }
+
+    // Loi khac → throw de UI hien thi
+    throw Exception(
+      'Login failed: ${response.statusCode} - ${response.body}',
+    );
   }
 
   // REGISTER

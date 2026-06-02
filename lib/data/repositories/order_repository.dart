@@ -25,7 +25,7 @@ class OrderRepository {
     return service.getOrdersByUserIdAndStatus(userId, status);
   }
 
-  Future<void> createOrder(OrderModel order) {
+  Future<OrderModel> createOrder(OrderModel order) {
     return service.createOrder(order);
   }
 

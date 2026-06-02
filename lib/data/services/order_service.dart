@@ -87,16 +87,27 @@ class OrderService {
   // =========================
   // CREATE
   // =========================
-  Future<void> createOrder(OrderModel order) async {
+  Future<OrderModel> createOrder(OrderModel order) async {
+    final body = jsonEncode(order.toJson());
+    debugPrint('[OrderService] POST $baseUrl');
+    debugPrint('[OrderService] body: $body');
+
     final response = await http.post(
       Uri.parse(baseUrl),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(order.toJson()),
+      body: body,
     );
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Create order failed');
+    debugPrint('[OrderService] status=${response.statusCode}');
+    debugPrint('[OrderService] response: ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      // Backend tra ve order vua tao (kem orderId)
+      return OrderModel.fromJson(jsonDecode(response.body));
     }
+    throw Exception(
+      'Create order failed: ${response.statusCode} - ${response.body}',
+    );
   }
 
   // =========================

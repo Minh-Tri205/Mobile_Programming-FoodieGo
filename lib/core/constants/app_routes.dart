@@ -17,6 +17,7 @@ class AppRoutes {
   static const String notifications = '/notifications'; // Thông báo
   static const String orderDetail = '/order-detail'; // ← thêm mới
   static const String review = '/review';
+  static const String addresses = '/addresses'; // Dia chi cua toi
 
   // Admin Main
   static const String adminDashboard = '/admin/dashboard';
@@ -40,6 +41,9 @@ class AppRoutes {
 
   // Statistics
   static const String adminStatistics = '/admin/statistics';
+
+  // Vouchers
+  static const String adminVouchers = '/admin/vouchers';
 
   // Notifications
   static const String adminNotifications = '/admin/notifications';

@@ -5,6 +5,7 @@ import 'package:doancuoiki/views/admin/admin_orders_screen.dart';
 import 'package:doancuoiki/views/admin/admin_products_screen.dart';
 import 'package:doancuoiki/views/admin/admin_statistics_screen.dart';
 import 'package:doancuoiki/views/admin/admin_users_screen.dart';
+import 'package:doancuoiki/views/admin/admin_vouchers_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -73,6 +74,12 @@ class AdminDrawer extends StatelessWidget {
             Icons.people_rounded,
             'Người dùng',
             const AdminUsersScreen(),
+          ),
+          _buildDrawerItem(
+            context,
+            Icons.local_offer_rounded,
+            'Mã giảm giá',
+            const AdminVouchersScreen(),
           ),
           _buildDrawerItem(
             context,

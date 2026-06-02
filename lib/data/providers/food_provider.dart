@@ -138,9 +138,15 @@ class FoodProvider extends ChangeNotifier {
   }
 
   // ==== ADMIN ACTIONS ====
-  Future<void> createFood(FoodModel food) async {
+  Future<void> createFood(
+    FoodModel food, {
+    String? localFilePath,
+  }) async {
     try {
-      final created = await repository.createFood(food);
+      final created = await repository.createFood(
+        food,
+        localFilePath: localFilePath,
+      );
       foods = [...foods, created];
       notifyListeners();
     } catch (e) {
@@ -150,9 +156,17 @@ class FoodProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateFood(int id, FoodModel food) async {
+  Future<void> updateFood(
+    int id,
+    FoodModel food, {
+    String? localFilePath,
+  }) async {
     try {
-      final updated = await repository.updateFood(id, food);
+      final updated = await repository.updateFood(
+        id,
+        food,
+        localFilePath: localFilePath,
+      );
       final idx = foods.indexWhere((f) => f.foodId == id);
       if (idx != -1) {
         foods[idx] = updated;

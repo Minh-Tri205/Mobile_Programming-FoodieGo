@@ -22,6 +22,18 @@ class UserRepository {
     return service.updateUser(id, data);
   }
 
+  Future<UserModel> updateUserMultipart(
+    int id, {
+    Map<String, String>? fields,
+    String? avatarFilePath,
+  }) {
+    return service.updateUserMultipart(
+      id,
+      fields: fields,
+      avatarFilePath: avatarFilePath,
+    );
+  }
+
   Future<void> deleteUser(int id) {
     return service.deleteUser(id);
   }

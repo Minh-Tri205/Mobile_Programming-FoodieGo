@@ -4,8 +4,13 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../data/providers/cart_provider.dart';
+import '../../../data/providers/favorite_provider.dart';
 import '../../../data/providers/food_provider.dart';
+import '../../../data/providers/review_provider.dart';
+import '../../../data/providers/user_provider.dart';
 import '../../../models/food_model.dart';
+import '../../../models/review_model.dart';
 
 class FoodDetailScreen extends StatefulWidget {
   const FoodDetailScreen({super.key});
@@ -16,8 +21,8 @@ class FoodDetailScreen extends StatefulWidget {
 
 class _FoodDetailScreenState extends State<FoodDetailScreen> {
   int _quantity = 1;
-  bool _isFavorite = false;
   bool _loaded = false;
+  bool _togglingFavorite = false;
 
   @override
   void didChangeDependencies() {
@@ -37,6 +42,61 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
         context.read<FoodProvider>().setSelectedFood(args);
       });
     }
+
+    // Đảm bảo favorites đã load để biết món này đã thích chưa
+    Future.microtask(() {
+      if (!mounted) return;
+      final uid = context.read<UserProvider>().currentUserId;
+      if (uid != null) {
+        context.read<FavoriteProvider>().ensureLoadedForUser(uid);
+      }
+    });
+
+    // Load reviews (de hien thi danh gia tren food detail)
+    Future.microtask(() {
+      if (!mounted) return;
+      final reviewProv = context.read<ReviewProvider>();
+      if (reviewProv.reviews.isEmpty && !reviewProv.isLoading) {
+        reviewProv.fetchAll();
+      }
+    });
+  }
+
+  Future<void> _toggleFavorite(FoodModel food) async {
+    if (_togglingFavorite) return;
+    final userId = context.read<UserProvider>().currentUserId;
+    if (userId == null) {
+      _showSnack('Bạn cần đăng nhập', error: true);
+      return;
+    }
+    if (food.foodId == null) return;
+
+    setState(() => _togglingFavorite = true);
+    try {
+      final added =
+          await context.read<FavoriteProvider>().toggle(userId, food.foodId!);
+      if (mounted) {
+        _showSnack(added ? 'Đã thêm vào yêu thích ❤️' : 'Đã bỏ khỏi yêu thích');
+      }
+    } catch (e) {
+      if (mounted) _showSnack('Lỗi: $e', error: true);
+    } finally {
+      if (mounted) setState(() => _togglingFavorite = false);
+    }
+  }
+
+  void _showSnack(String msg, {bool error = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: error
+            ? AppColors.statusCancelledText
+            : AppColors.accent1,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   String _formatMoney(double amount) {
@@ -132,10 +192,18 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                   Icons.arrow_back_ios_new_rounded,
                   onTap: () => Navigator.pop(context),
                 ),
-                _circleIcon(
-                  _isFavorite ? Icons.favorite : Icons.favorite_border_rounded,
-                  iconColor: _isFavorite ? AppColors.accent1 : null,
-                  onTap: () => setState(() => _isFavorite = !_isFavorite),
+                Consumer<FavoriteProvider>(
+                  builder: (ctx, favProv, _) {
+                    final isFav = food.foodId != null &&
+                        favProv.isFavorite(food.foodId!);
+                    return _circleIcon(
+                      isFav
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      iconColor: isFav ? AppColors.accent1 : null,
+                      onTap: () => _toggleFavorite(food),
+                    );
+                  },
                 ),
               ],
             ),
@@ -310,6 +378,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
               const SizedBox(height: 18),
             ],
             _buildQuantityRow(food),
+            const SizedBox(height: 24),
+            _buildReviewsSection(food),
           ],
         ),
       ),
@@ -317,28 +387,47 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
   }
 
   Widget _buildQuickStats(FoodModel food) {
-    return Row(
-      children: [
-        _statChip(
-          icon: Icons.star_rounded,
-          color: AppColors.accent4,
-          label: food.avgRating > 0
-              ? food.avgRating.toStringAsFixed(1)
-              : 'Mới',
-        ),
-        const SizedBox(width: 8),
-        _statChip(
-          icon: Icons.local_fire_department_rounded,
-          color: AppColors.accent1,
-          label: 'Đã bán ${food.totalSold}',
-        ),
-        const SizedBox(width: 8),
-        _statChip(
-          icon: Icons.inventory_2_outlined,
-          color: food.inStock ? AppColors.accent3 : AppColors.statusCancelledText,
-          label: food.inStock ? 'Còn ${food.stockQuantity}' : 'Hết hàng',
-        ),
-      ],
+    return Consumer<ReviewProvider>(
+      builder: (context, prov, _) {
+        // Tinh avg rating tu reviews thuc te cua mon nay (qua cac don da danh gia).
+        // Fallback ve food.avgRating tu backend neu chua co review nao trong cache.
+        double avg = 0;
+        int count = 0;
+        if (food.foodId != null) {
+          final list = prov.ofFood(food.foodId!);
+          count = list.length;
+          if (count > 0) {
+            avg = list.fold<int>(0, (s, r) => s + r.rating) / count;
+          }
+        }
+        final displayAvg = count > 0 ? avg : food.avgRating;
+
+        return Row(
+          children: [
+            _statChip(
+              icon: Icons.star_rounded,
+              color: AppColors.accent4,
+              label: displayAvg > 0
+                  ? displayAvg.toStringAsFixed(1)
+                  : 'Mới',
+            ),
+            const SizedBox(width: 8),
+            _statChip(
+              icon: Icons.local_fire_department_rounded,
+              color: AppColors.accent1,
+              label: 'Đã bán ${food.totalSold}',
+            ),
+            const SizedBox(width: 8),
+            _statChip(
+              icon: Icons.inventory_2_outlined,
+              color: food.inStock
+                  ? AppColors.accent3
+                  : AppColors.statusCancelledText,
+              label: food.inStock ? 'Còn ${food.stockQuantity}' : 'Hết hàng',
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -443,6 +532,252 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
   }
 
   // =========================================================
+  // REVIEWS — danh sach danh gia cua mon nay
+  // =========================================================
+  Widget _buildReviewsSection(FoodModel food) {
+    return Consumer<ReviewProvider>(
+      builder: (context, prov, _) {
+        if (food.foodId == null) return const SizedBox.shrink();
+
+        if (prov.isLoading && prov.reviews.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        final reviews = prov.ofFood(food.foodId!)
+          ..sort((a, b) {
+            final ad = a.createdAt ?? DateTime(2000);
+            final bd = b.createdAt ?? DateTime(2000);
+            return bd.compareTo(ad); // moi nhat truoc
+          });
+
+        final avg = reviews.isEmpty
+            ? 0.0
+            : reviews.fold<int>(0, (s, r) => s + r.rating) / reviews.length;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'Đánh giá',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.pastel4,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${reviews.length}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.accent4,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                if (reviews.isNotEmpty)
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.star_rounded,
+                        size: 16,
+                        color: AppColors.accent4,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        avg.toStringAsFixed(1),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.accent4,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (reviews.isEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Column(
+                  children: [
+                    Icon(
+                      Icons.rate_review_outlined,
+                      color: AppColors.textMuted,
+                      size: 28,
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Chưa có đánh giá nào',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Column(
+                children: List.generate(
+                  reviews.length > 5 ? 5 : reviews.length,
+                  (i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _buildReviewCard(reviews[i]),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildReviewCard(ReviewModel r) {
+    final name = r.userName.isNotEmpty ? r.userName : 'Khách hàng';
+    final letter = _firstLetter(name);
+    final avatar = r.userAvatarUrl;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              ClipOval(
+                child: SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: (avatar != null && avatar.isNotEmpty)
+                      ? Image.network(
+                          avatar,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _reviewLetterAvatar(letter),
+                        )
+                      : _reviewLetterAvatar(letter),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (r.createdAt != null)
+                      Text(
+                        _formatDate(r.createdAt!),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Row(
+                children: List.generate(5, (i) {
+                  return Icon(
+                    i < r.rating
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    color: AppColors.accent4,
+                    size: 14,
+                  );
+                }),
+              ),
+            ],
+          ),
+          if (r.comment != null && r.comment!.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              r.comment!.trim(),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textPrimary,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _reviewLetterAvatar(String letter) {
+    return Container(
+      color: AppColors.pastel1,
+      alignment: Alignment.center,
+      child: Text(
+        letter,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w800,
+          color: AppColors.accent1,
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime d) {
+    final now = DateTime.now();
+    final diff = now.difference(d);
+    if (diff.inDays == 0) {
+      if (diff.inHours == 0) return '${diff.inMinutes} phút trước';
+      return '${diff.inHours} giờ trước';
+    }
+    if (diff.inDays < 7) return '${diff.inDays} ngày trước';
+    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  }
+
+  // =========================================================
   // BOTTOM BAR — total + add to cart
   // =========================================================
   Widget _buildAddToCartBar(FoodModel food) {
@@ -493,7 +828,33 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
           Expanded(
             child: GestureDetector(
               onTap: food.inStock
-                  ? () => Navigator.pushNamed(context, AppRoutes.cart)
+                  ? () {
+                      context.read<CartProvider>().addItem(
+                            food,
+                            quantity: _quantity,
+                          );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Đã thêm ${_quantity}× "${food.name}" vào giỏ',
+                          ),
+                          backgroundColor: AppColors.accent3,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          margin: const EdgeInsets.all(16),
+                          action: SnackBarAction(
+                            label: 'Xem giỏ',
+                            textColor: Colors.white,
+                            onPressed: () => Navigator.pushNamed(
+                              context,
+                              AppRoutes.cart,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
                   : null,
               child: Container(
                 height: 52,

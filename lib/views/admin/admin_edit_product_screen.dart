@@ -1,6 +1,9 @@
 // lib/views/admin/admin_edit_product_screen.dart
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -30,6 +33,10 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
   bool _submitting = false;
   bool _loaded = false;
   FoodModel? _original;
+
+  // File anh chon tu camera/gallery — neu khac null se upload multipart
+  String? _localFilePath;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -105,6 +112,9 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
 
     setState(() => _submitting = true);
 
+    final hasLocalFile = _localFilePath != null && _localFilePath!.isNotEmpty;
+    final urlValue = _imageUrlCtrl.text.trim();
+
     final updated = FoodModel(
       foodId: _original!.foodId,
       categoryId: _selectedCategory!.categoryId,
@@ -115,18 +125,21 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
           ? null
           : _descCtrl.text.trim(),
       stockQuantity: int.tryParse(_stockCtrl.text.trim()) ?? 0,
-      imageUrl: _imageUrlCtrl.text.trim().isEmpty
+      // Co file upload moi -> bo qua URL, backend luu filename
+      imageUrl: hasLocalFile
           ? null
-          : _imageUrlCtrl.text.trim(),
+          : (urlValue.isEmpty ? null : urlValue),
       isActive: _isActive,
       totalSold: _original!.totalSold,
       avgRating: _original!.avgRating,
     );
 
     try {
-      await context
-          .read<FoodProvider>()
-          .updateFood(_original!.foodId!, updated);
+      await context.read<FoodProvider>().updateFood(
+            _original!.foodId!,
+            updated,
+            localFilePath: hasLocalFile ? _localFilePath : null,
+          );
       if (!mounted) return;
       _toast('Đã cập nhật "${updated.name}"');
       Navigator.pop(context);
@@ -134,6 +147,171 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
       if (mounted) _toast('Lỗi: $e', error: true);
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  // =========================================================
+  // IMAGE PICKER — camera / gallery
+  // =========================================================
+  void _showImagePickerSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                'Đổi ảnh món ăn',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _pickerTile(
+                icon: Icons.photo_camera_outlined,
+                iconBg: AppColors.pastel1,
+                iconColor: AppColors.accent1,
+                label: 'Chụp ảnh',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _pickFromCamera();
+                },
+              ),
+              const SizedBox(height: 10),
+              _pickerTile(
+                icon: Icons.photo_library_outlined,
+                iconBg: AppColors.pastel2,
+                iconColor: AppColors.accent2,
+                label: 'Chọn từ thư viện',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _pickFromGallery();
+                },
+              ),
+              if (_localFilePath != null) ...[
+                const SizedBox(height: 10),
+                _pickerTile(
+                  icon: Icons.delete_outline_rounded,
+                  iconBg: const Color(0xFFFFE5E5),
+                  iconColor: AppColors.statusCancelledText,
+                  label: 'Bỏ ảnh đã chọn',
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    setState(() => _localFilePath = null);
+                  },
+                ),
+              ],
+              const SizedBox(height: 10),
+              _pickerTile(
+                icon: Icons.close_rounded,
+                iconBg: const Color(0xFFEFEFEF),
+                iconColor: AppColors.textMuted,
+                label: 'Huỷ',
+                onTap: () => Navigator.pop(sheetCtx),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _pickerTile({
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFAF7F4),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickFromCamera() async {
+    try {
+      final x = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 1280,
+      );
+      if (x != null) {
+        setState(() {
+          _localFilePath = x.path;
+          _imageUrlCtrl.clear();
+        });
+      }
+    } catch (e) {
+      _toast('Không mở được camera: $e', error: true);
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    try {
+      final x = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1280,
+      );
+      if (x != null) {
+        setState(() {
+          _localFilePath = x.path;
+          _imageUrlCtrl.clear();
+        });
+      }
+    } catch (e) {
+      _toast('Không mở được thư viện: $e', error: true);
     }
   }
 
@@ -311,7 +489,13 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
     final letter = _firstLetter(_nameCtrl.text);
 
     Widget child;
-    if (url.isEmpty) {
+    if (_localFilePath != null && _localFilePath!.isNotEmpty) {
+      child = Image.file(
+        File(_localFilePath!),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _initialBox(letter),
+      );
+    } else if (url.isEmpty) {
       child = _initialBox(letter);
     } else if (url.startsWith('http')) {
       child = Image.network(
@@ -327,22 +511,88 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
       );
     }
 
-    return Container(
-      height: 160,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: child,
+    return GestureDetector(
+      onTap: _showImagePickerSheet,
+      child: Container(
+        height: 160,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: child,
+              ),
+            ),
+            Positioned(
+              bottom: 10,
+              right: 10,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.accent1,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.photo_camera_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ),
+            if (_localFilePath != null)
+              Positioned(
+                top: 10,
+                left: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent3,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Ảnh mới',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

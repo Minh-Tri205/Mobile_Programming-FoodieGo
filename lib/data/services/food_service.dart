@@ -1,6 +1,8 @@
 // lib/data/services/food_service.dart
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../models/food_model.dart';
@@ -29,32 +31,104 @@ class FoodService {
     }
   }
 
-  // CREATE
-  Future<FoodModel> createFood(FoodModel food) async {
-    final response = await http.post(
-      Uri.parse(baseUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(food.toJson()),
-    );
-    if (response.statusCode == 201 || response.statusCode == 200) {
-      return FoodModel.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Create food failed: ${response.statusCode}');
+  // CREATE — multipart, ho tro file upload hoac imageUrl
+  // Backend: [FromForm] FoodItem food, IFormFile? file
+  Future<FoodModel> createFood(
+    FoodModel food, {
+    String? localFilePath,
+  }) async {
+    final uri = Uri.parse(baseUrl);
+    final req = http.MultipartRequest('POST', uri);
+
+    req.fields.addAll(_foodFields(food, includeFoodId: false));
+
+    if (localFilePath != null && localFilePath.isNotEmpty) {
+      final f = File(localFilePath);
+      if (!await f.exists()) {
+        throw Exception('File anh khong ton tai: $localFilePath');
+      }
+      req.files.add(await http.MultipartFile.fromPath('file', localFilePath));
     }
+
+    debugPrint('[FoodService] POST $uri fields=${req.fields}');
+    final streamed = await req.send();
+    final response = await http.Response.fromStream(streamed);
+    debugPrint('[FoodService] status=${response.statusCode} body=${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+      // Backend tra: { message, food: {...} }
+      final foodJson = data is Map<String, dynamic> && data['food'] != null
+          ? data['food']
+          : data;
+      return FoodModel.fromJson(foodJson);
+    }
+    throw Exception(
+      'Create food failed: ${response.statusCode} - ${response.body}',
+    );
   }
 
-  // PUT — replace toàn bộ
-  Future<FoodModel> updateFood(int id, FoodModel food) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/$id'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(food.toJson()),
-    );
-    if (response.statusCode == 200) {
-      return FoodModel.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Update food failed: ${response.statusCode}');
+  // PUT — replace, ho tro file upload hoac imageUrl
+  // Backend: [FromForm] FoodItem dto, IFormFile? file
+  Future<FoodModel> updateFood(
+    int id,
+    FoodModel food, {
+    String? localFilePath,
+  }) async {
+    final uri = Uri.parse('$baseUrl/$id');
+    final req = http.MultipartRequest('PUT', uri);
+
+    req.fields.addAll(_foodFields(food, includeFoodId: true));
+
+    if (localFilePath != null && localFilePath.isNotEmpty) {
+      final f = File(localFilePath);
+      if (!await f.exists()) {
+        throw Exception('File anh khong ton tai: $localFilePath');
+      }
+      req.files.add(await http.MultipartFile.fromPath('file', localFilePath));
     }
+
+    debugPrint('[FoodService] PUT $uri fields=${req.fields}');
+    final streamed = await req.send();
+    final response = await http.Response.fromStream(streamed);
+    debugPrint('[FoodService] status=${response.statusCode} body=${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final foodJson = data is Map<String, dynamic> && data['food'] != null
+          ? data['food']
+          : data;
+      return FoodModel.fromJson(foodJson);
+    }
+    throw Exception(
+      'Update food failed: ${response.statusCode} - ${response.body}',
+    );
+  }
+
+  // Build form fields tu FoodModel — tat ca value la string
+  Map<String, String> _foodFields(
+    FoodModel f, {
+    required bool includeFoodId,
+  }) {
+    final m = <String, String>{
+      'name': f.name,
+      'price': f.price.toString(),
+      'totalSold': f.totalSold.toString(),
+      'stockQuantity': f.stockQuantity.toString(),
+      'avgRating': f.avgRating.toString(),
+      'isActive': f.isActive.toString(),
+    };
+    if (f.categoryId != null) m['categoryId'] = f.categoryId.toString();
+    if (f.description != null && f.description!.isNotEmpty) {
+      m['description'] = f.description!;
+    }
+    if (f.imageUrl != null && f.imageUrl!.isNotEmpty) {
+      m['imageUrl'] = f.imageUrl!;
+    }
+    if (includeFoodId && f.foodId != null) {
+      m['foodId'] = f.foodId.toString();
+    }
+    return m;
   }
 
   // PATCH — chỉ field có giá trị

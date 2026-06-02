@@ -173,8 +173,8 @@ class OrderModel {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'orderId': orderId,
+    // Backend C# co OrderId la int (non-null) -> null se fail JSON binding khi CREATE
+    final map = <String, dynamic>{
       'userId': userId,
       'orderCode': orderCode,
       'recipientName': recipientName,
@@ -189,10 +189,13 @@ class OrderModel {
       'discountAmount': discountAmount,
       'status': status,
       'totalAmount': totalAmount,
-      'createdAt': createdAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
-      'items': items.map((e) => e.toJson()).toList(),
+      // Backend C# nav property la `OrderItems` -> JSON binding can `orderItems`
+      'orderItems': items.map((e) => e.toJson()).toList(),
     };
+    if (orderId != null) map['orderId'] = orderId;
+    if (createdAt != null) map['createdAt'] = createdAt!.toIso8601String();
+    if (updatedAt != null) map['updatedAt'] = updatedAt!.toIso8601String();
+    return map;
   }
 
   // ============================================================

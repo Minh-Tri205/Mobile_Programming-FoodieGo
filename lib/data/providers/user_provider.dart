@@ -106,6 +106,63 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  // UPDATE MULTIPART - dung cho upload avatar
+  // Tra ve UserModel da update; cap nhat currentUser neu trung id
+  Future<UserModel> updateUserMultipart(
+    int id, {
+    Map<String, String>? fields,
+    String? avatarFilePath,
+  }) async {
+    try {
+      isLoadingProfile = true;
+      notifyListeners();
+
+      final updated = await repository.updateUserMultipart(
+        id,
+        fields: fields,
+        avatarFilePath: avatarFilePath,
+      );
+
+      // Backend tra ve thieu mot so truong (vd: passwordHash, createdAt)
+      // -> merge voi currentUser cu de giu nguyen cac truong khac
+      if (currentUser != null && currentUser!.userId == id) {
+        currentUser = UserModel(
+          userId: updated.userId,
+          fullName: updated.fullName.isNotEmpty
+              ? updated.fullName
+              : currentUser!.fullName,
+          email: updated.email ?? currentUser!.email,
+          phone: updated.phone ?? currentUser!.phone,
+          passwordHash: currentUser!.passwordHash,
+          avatarUrl: updated.avatarUrl ?? currentUser!.avatarUrl,
+          deviceToken: currentUser!.deviceToken,
+          role: updated.role ?? currentUser!.role,
+          isActive: updated.isActive ?? currentUser!.isActive,
+          loyaltyPoints: updated.loyaltyPoints ?? currentUser!.loyaltyPoints,
+          passwordResetToken: currentUser!.passwordResetToken,
+          resetTokenExpiry: currentUser!.resetTokenExpiry,
+          createdAt: currentUser!.createdAt,
+          updatedAt: DateTime.now(),
+        );
+      }
+
+      // Cap nhat trong list users (neu co)
+      final idx = users.indexWhere((u) => u.userId == id);
+      if (idx != -1) {
+        users[idx] = currentUser ?? updated;
+      }
+
+      error = null;
+      return currentUser ?? updated;
+    } catch (e) {
+      error = e.toString();
+      rethrow;
+    } finally {
+      isLoadingProfile = false;
+      notifyListeners();
+    }
+  }
+
   // DELETE
   Future<void> deleteUser(int id) async {
     try {

@@ -41,6 +41,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         provider.selectedOrder = args;
         // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
         provider.notifyListeners();
+        // Refetch ngam theo ID de lay nested food (kem imageUrl) tu GetById,
+        // vi list endpoint co the khong .Include(OrderItems).ThenInclude(Food)
+        if (args.orderId != null) {
+          provider.refreshOrderById(args.orderId!);
+        }
       });
     }
   }

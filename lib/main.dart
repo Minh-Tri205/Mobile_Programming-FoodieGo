@@ -56,6 +56,30 @@ import 'data/providers/food_provider.dart';
 import 'data/repositories/food_repository.dart';
 import 'data/services/food_service.dart';
 
+import 'data/providers/favorite_provider.dart';
+import 'data/repositories/favorite_repository.dart';
+import 'data/services/favorite_service.dart';
+
+import 'data/providers/review_provider.dart';
+import 'data/repositories/review_repository.dart';
+import 'data/services/review_service.dart';
+
+import 'data/providers/cart_provider.dart';
+import 'data/repositories/cart_repository.dart';
+import 'data/services/cart_service.dart';
+
+import 'data/providers/address_provider.dart';
+import 'data/repositories/address_repository.dart';
+import 'data/services/address_service.dart';
+
+import 'data/providers/voucher_provider.dart';
+import 'data/repositories/voucher_repository.dart';
+import 'data/services/voucher_service.dart';
+
+import 'data/providers/voucher_usage_provider.dart';
+import 'data/repositories/voucher_usage_repository.dart';
+import 'data/services/voucher_usage_service.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -81,6 +105,29 @@ void main() {
         ),
         ChangeNotifierProvider(
           create: (_) => FoodProvider(FoodRepository(FoodService())),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              FavoriteProvider(FavoriteRepository(FavoriteService())),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ReviewProvider(ReviewRepository(ReviewService())),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CartProvider(CartRepository(CartService())),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              AddressProvider(AddressRepository(AddressService())),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              VoucherProvider(VoucherRepository(VoucherService())),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => VoucherUsageProvider(
+            VoucherUsageRepository(VoucherUsageService()),
+          ),
         ),
       ],
 

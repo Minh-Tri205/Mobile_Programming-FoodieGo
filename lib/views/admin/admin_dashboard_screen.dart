@@ -615,6 +615,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         route: AppRoutes.adminUsers,
       ),
       _Action(
+        icon: Icons.local_offer_rounded,
+        label: 'Voucher',
+        bg: AppColors.pastel4,
+        accent: AppColors.accent4,
+        route: AppRoutes.adminVouchers,
+      ),
+      _Action(
         icon: Icons.bar_chart_rounded,
         label: 'Báo cáo',
         bg: AppColors.pastel5,

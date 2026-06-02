@@ -1,13 +1,17 @@
 // lib/views/user/profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../data/providers/favorite_provider.dart';
 import '../../../data/providers/order_provider.dart';
+import '../../../data/providers/review_provider.dart';
 import '../../../data/providers/user_provider.dart';
 import '../../../models/user_model.dart';
 import '../../../widgets/navigation/app_bottom_nav.dart';
+import 'favorites_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -17,6 +21,9 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final ImagePicker _picker = ImagePicker();
+  bool _uploadingAvatar = false;
+
   @override
   void initState() {
     super.initState();
@@ -24,11 +31,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Future.microtask(() {
       final userProvider = context.read<UserProvider>();
       final orderProvider = context.read<OrderProvider>();
+      final favProvider = context.read<FavoriteProvider>();
+      final reviewProvider = context.read<ReviewProvider>();
 
       final id = userProvider.currentUserId;
       if (id != null) {
         userProvider.fetchUserById(id);
         orderProvider.fetchOrdersByUserId(id);
+        favProvider.ensureLoadedForUser(id);
+        if (reviewProvider.reviews.isEmpty) reviewProvider.fetchAll();
       }
     });
   }
@@ -77,6 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       iconBg: AppColors.pastel2,
                       iconColor: AppColors.accent2,
                       label: 'Địa chỉ của tôi',
+                      route: AppRoutes.addresses,
                     ),
                     _MenuEntry(
                       icon: Icons.credit_card_outlined,
@@ -89,6 +101,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       iconBg: AppColors.pastel5,
                       iconColor: AppColors.accent5,
                       label: 'Món ăn yêu thích',
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const FavoritesScreen(),
+                        ),
+                      ),
                     ),
                     _MenuEntry(
                       icon: Icons.receipt_long_outlined,
@@ -200,48 +218,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Column(
               children: [
                 // Avatar with white ring + shadow + tier badge overlay
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.12),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: _buildAvatar(user),
-                    ),
-                    Positioned(
-                      bottom: -2,
-                      right: -2,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
+                GestureDetector(
+                  onTap: _uploadingAvatar ? null : _showAvatarPickerSheet,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: tier.color,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white, width: 2),
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.12),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
-                        child: Text(
-                          tier.label,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                        child: _buildAvatar(user),
+                      ),
+                      if (_uploadingAvatar)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.35),
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.4,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      Positioned(
+                        bottom: -2,
+                        right: -2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: tier.color,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: Text(
+                            tier.label,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 14),
@@ -269,7 +308,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 // Edit profile pill
                 GestureDetector(
-                  onTap: () {},
+                  onTap: _uploadingAvatar ? null : _showAvatarPickerSheet,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 18,
@@ -365,6 +404,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // =========================================================
   Widget _buildStatsCard(UserModel user) {
     final ordersCount = context.watch<OrderProvider>().orders.length;
+    final reviewsCount = context
+        .watch<ReviewProvider>()
+        .ofUser(user.userId)
+        .length;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -399,7 +442,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _statCell(
             icon: Icons.star_rounded,
             color: AppColors.accent3,
-            value: '0',
+            value: '$reviewsCount',
             label: 'Đánh giá',
             showDivider: false,
           ),
@@ -510,9 +553,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildMenuItem(_MenuEntry e, {required bool isLast}) {
     return InkWell(
-      onTap: e.route != null
-          ? () => Navigator.pushNamed(context, e.route!)
-          : () {},
+      onTap: e.onTap ??
+          (e.route != null
+              ? () => Navigator.pushNamed(context, e.route!)
+              : () {}),
       borderRadius: BorderRadius.vertical(
         top: const Radius.circular(18),
         bottom: isLast ? const Radius.circular(18) : Radius.zero,
@@ -640,6 +684,200 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // =========================================================
+  // AVATAR PICKER — bottom sheet: camera / gallery
+  // =========================================================
+  void _showAvatarPickerSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                'Đổi ảnh đại diện',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _avatarOptionTile(
+                icon: Icons.photo_camera_outlined,
+                iconBg: AppColors.pastel1,
+                iconColor: AppColors.accent1,
+                label: 'Chụp ảnh',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _pickFromCamera();
+                },
+              ),
+              const SizedBox(height: 10),
+              _avatarOptionTile(
+                icon: Icons.photo_library_outlined,
+                iconBg: AppColors.pastel2,
+                iconColor: AppColors.accent2,
+                label: 'Chọn từ thư viện',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _pickFromGallery();
+                },
+              ),
+              const SizedBox(height: 10),
+              _avatarOptionTile(
+                icon: Icons.close_rounded,
+                iconBg: const Color(0xFFEFEFEF),
+                iconColor: AppColors.textMuted,
+                label: 'Huỷ',
+                onTap: () => Navigator.pop(sheetCtx),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _avatarOptionTile({
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFAF7F4),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickFromCamera() async {
+    try {
+      final XFile? x = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 1024,
+      );
+      if (x != null) {
+        await _uploadAvatar(x.path);
+      }
+    } catch (e) {
+      _showErrorDialog('Không mở được camera: $e');
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    try {
+      final XFile? x = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1024,
+      );
+      if (x != null) {
+        await _uploadAvatar(x.path);
+      }
+    } catch (e) {
+      _showErrorDialog('Không mở được thư viện: $e');
+    }
+  }
+
+  Future<void> _uploadAvatar(String filePath) async {
+    final userProv = context.read<UserProvider>();
+    final id = userProv.currentUserId ?? userProv.currentUser?.userId;
+    if (id == null) {
+      _showErrorDialog('Vui lòng đăng nhập lại');
+      return;
+    }
+
+    setState(() => _uploadingAvatar = true);
+    try {
+      await userProv.updateUserMultipart(
+        id,
+        avatarFilePath: filePath,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cập nhật ảnh đại diện thành công'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      _showErrorDialog(e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingAvatar = false);
+      }
+    }
+  }
+
+  void _showErrorDialog(String msg) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Lỗi'),
+        content: SelectableText(msg),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================
   // TIER — badge theo loyaltyPoints (gán cứng ngưỡng)
   // =========================================================
   _Tier _tierFor(int points) {
@@ -679,6 +917,7 @@ class _MenuEntry {
   final String label;
   final String? badge;
   final String? route;
+  final VoidCallback? onTap;
 
   const _MenuEntry({
     required this.icon,
@@ -687,6 +926,7 @@ class _MenuEntry {
     required this.label,
     this.badge,
     this.route,
+    this.onTap,
   });
 }
 

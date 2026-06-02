@@ -58,6 +58,22 @@ class OrderProvider extends ChangeNotifier {
   }
 
   // =========================
+  // REFRESH BY ID — lay du lieu day du (kem nested food) ma KHONG xoa
+  // selectedOrder hien tai -> tranh flicker khi mo chi tiet tu list
+  // =========================
+  Future<void> refreshOrderById(int id) async {
+    try {
+      final fresh = await repository.getOrderById(id);
+      selectedOrder = fresh;
+      error = null;
+      notifyListeners();
+    } catch (e) {
+      error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  // =========================
   // GET BY USER ID
   // =========================
   Future<void> fetchOrdersByUserId(int userId) async {
@@ -109,17 +125,21 @@ class OrderProvider extends ChangeNotifier {
   }
 
   // =========================
-  // CREATE
+  // CREATE — tra ve order vua tao (kem orderId), rethrow neu loi
+  // de UI xu ly va hien thi message chi tiet
   // =========================
-  Future<void> createOrder(OrderModel order) async {
+  Future<OrderModel> createOrder(OrderModel order) async {
     try {
-      await repository.createOrder(order);
-
-      await fetchOrders();
+      final created = await repository.createOrder(order);
+      // Them vao dau list de UI thay ngay khong can chho fetchOrders
+      orders.insert(0, created);
+      error = null;
+      notifyListeners();
+      return created;
     } catch (e) {
       error = e.toString();
-
       notifyListeners();
+      rethrow;
     }
   }
 

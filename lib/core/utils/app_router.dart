@@ -27,6 +27,8 @@ import 'package:doancuoiki/views/user/notifications_screen.dart';
 import 'package:doancuoiki/views/user/order_detail_screen.dart';
 import 'package:doancuoiki/views/user/review_screen.dart';
 import 'package:doancuoiki/views/user/forgot_password_screen.dart';
+import 'package:doancuoiki/views/user/address_screen.dart';
+import 'package:doancuoiki/views/admin/admin_vouchers_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -64,6 +66,10 @@ class AppRouter {
       case AppRoutes.forgotPassword:
         return _slide(const ForgotPasswordScreen(), settings);
 
+      // Dia chi cua toi
+      case AppRoutes.addresses:
+        return _slide(const AddressScreen(), settings);
+
       // Admin Routes
       case AppRoutes.adminDashboard:
         return _slide(const AdminDashboardScreen(), settings);
@@ -87,6 +93,9 @@ class AppRouter {
         return _slide(AdminUserHistoryScreen(userId: userId), settings);
       case AppRoutes.adminStatistics:
         return _slide(const AdminStatisticsScreen(), settings);
+
+      case AppRoutes.adminVouchers:
+        return _slide(const AdminVouchersScreen(), settings);
 
       default:
         return _slide(const SplashScreen(), settings);

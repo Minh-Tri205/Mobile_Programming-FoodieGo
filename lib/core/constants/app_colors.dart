@@ -37,10 +37,9 @@ class AppColors {
   // Divider
   static const Color divider = Color(0xFFF0EAE5);
 
-  // Thêm vào phần Status colors
-static const Color statusPending = Color(0xFFF5F5F5);
-static const Color statusPendingText = Color(0xFF616161);
+  static const Color statusPending = Color(0xFFF5F5F5);
+  static const Color statusPendingText = Color(0xFF616161);
 
-static const Color statusConfirmed = Color(0xFFE8F5E9);
-static const Color statusConfirmedText = Color(0xFF2E7D32);
+  static const Color statusConfirmed = Color(0xFFE8F5E9);
+  static const Color statusConfirmedText = Color(0xFF2E7D32);
 }

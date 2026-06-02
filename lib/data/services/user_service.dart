@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../models/user_model.dart';
@@ -59,6 +61,56 @@ class UserService {
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception('Update user failed');
     }
+  }
+
+  // PATCH MULTIPART - dung khi co upload avatar tu camera/gallery
+  // Backend nhan [FromForm] User dto + IFormFile? file
+  Future<UserModel> updateUserMultipart(
+    int id, {
+    Map<String, String>? fields,
+    String? avatarFilePath,
+  }) async {
+    final uri = Uri.parse('$baseUrl/$id');
+    final req = http.MultipartRequest('PATCH', uri);
+
+    if (fields != null) {
+      fields.forEach((k, v) {
+        req.fields[k] = v;
+      });
+    }
+
+    if (avatarFilePath != null && avatarFilePath.isNotEmpty) {
+      final file = File(avatarFilePath);
+      if (!await file.exists()) {
+        throw Exception('File anh khong ton tai: $avatarFilePath');
+      }
+      req.files.add(
+        await http.MultipartFile.fromPath('file', avatarFilePath),
+      );
+    }
+
+    debugPrint('[UserService] PATCH multipart $uri');
+    debugPrint('[UserService] fields=${req.fields}');
+    debugPrint('[UserService] files=${req.files.map((f) => f.filename).toList()}');
+
+    final streamed = await req.send();
+    final response = await http.Response.fromStream(streamed);
+
+    debugPrint('[UserService] status=${response.statusCode}');
+    debugPrint('[UserService] body=${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      // Backend tra ve { message, userId, fullName, email, phone, avatarUrl, role, isActive, loyaltyPoints }
+      if (response.body.isNotEmpty) {
+        final data = jsonDecode(response.body);
+        return UserModel.fromJson(data);
+      }
+      // Fallback: fetch lai theo id
+      return getUserById(id);
+    }
+    throw Exception(
+      'Update user failed: ${response.statusCode} - ${response.body}',
+    );
   }
 
   // DELETE

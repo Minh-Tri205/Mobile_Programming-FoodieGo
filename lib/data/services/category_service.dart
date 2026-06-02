@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 
 import '../../models/category_model.dart';
 
-import 'package:flutter/material.dart';
 
 class CategoryService {
   static const String baseUrl = 'http://10.0.2.2:5187/api/Category';

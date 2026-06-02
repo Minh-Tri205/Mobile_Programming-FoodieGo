@@ -30,6 +30,7 @@ class OrderItemModel {
     //   { orderItemId, foodId, quantity, unitPrice, food: { name, imageUrl, ... } }
     // Cũng hỗ trợ dạng flat (foodName/foodImageUrl) cho tương thích.
     final food = json['food'] as Map<String, dynamic>?;
+    final rawImage = json['foodImageUrl'] ?? food?['imageUrl'];
     return OrderItemModel(
       orderItemId: json['orderItemId'],
       orderId: json['orderId'],
@@ -37,17 +38,33 @@ class OrderItemModel {
       quantity: json['quantity'] ?? 0,
       unitPrice: (json['unitPrice'] ?? 0).toDouble(),
       foodName: json['foodName'] ?? food?['name'] ?? '',
-      foodImageUrl: json['foodImageUrl'] ?? food?['imageUrl'],
+      foodImageUrl: _resolveFoodImageUrl(rawImage),
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'orderItemId': orderItemId,
-    'orderId': orderId,
-    'foodId': foodId,
-    'quantity': quantity,
-    'unitPrice': unitPrice,
-    'foodName': foodName,
-    'foodImageUrl': foodImageUrl,
-  };
+  // food.ImageUrl tu Order endpoint la filename thuan (vd: "abc.jpg")
+  // -> prepend base URL de Flutter Image.network load duoc
+  static String? _resolveFoodImageUrl(dynamic raw) {
+    if (raw == null) return null;
+    final s = raw.toString().trim();
+    if (s.isEmpty) return null;
+    if (s.startsWith('http://') || s.startsWith('https://')) return s;
+    if (s.startsWith('assets/')) return s;
+    return 'http://10.0.2.2:5187/Uploads/FoodItems/$s';
+  }
+
+  Map<String, dynamic> toJson() {
+    // Backend C# co OrderItemId va OrderId la int (non-null PK/FK)
+    // -> chi gui khi co gia tri thuc te (UPDATE), bo qua khi CREATE
+    final map = <String, dynamic>{
+      'foodId': foodId,
+      'quantity': quantity,
+      'unitPrice': unitPrice,
+      'foodName': foodName,
+      'foodImageUrl': foodImageUrl,
+    };
+    if (orderItemId != null) map['orderItemId'] = orderItemId;
+    if (orderId != null) map['orderId'] = orderId;
+    return map;
+  }
 }

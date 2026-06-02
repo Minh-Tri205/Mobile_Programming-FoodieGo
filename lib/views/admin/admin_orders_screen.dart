@@ -569,7 +569,8 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
 
   Widget _buildOrderCard(OrderModel order) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(
+      onTap: () => _showOrderActions(order),
+      onLongPress: () => Navigator.pushNamed(
         context,
         AppRoutes.orderDetail,
         arguments: order,
@@ -704,6 +705,293 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     );
   }
 
+  // =========================================================
+  // ACTION SHEET — chuyển trạng thái đơn (kết hợp xem chi tiết)
+  // =========================================================
+  void _showOrderActions(OrderModel order) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 18),
+            // Header thông tin đơn
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: order.status.bgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    _statusIcon(order.status),
+                    color: order.status.textColor,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        order.orderCode,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${order.recipientName} · ${_formatMoney(order.totalAmount)}đ',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMuted,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: order.status.bgColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    order.status.label,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: order.status.textColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 26),
+            // Action: xem chi tiết
+            _actionTile(
+              ctx,
+              icon: Icons.visibility_outlined,
+              color: AppColors.accent2,
+              label: 'Xem chi tiết đơn',
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.orderDetail,
+                  arguments: order,
+                );
+              },
+            ),
+            // Actions chuyển status theo trạng thái hiện tại
+            ..._nextActions(order).map(
+              (a) => _actionTile(
+                ctx,
+                icon: a.icon,
+                color: a.color,
+                label: a.label,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await _changeStatus(order, a.action, a.label);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Action phù hợp với từng trạng thái — đúng nghiệp vụ:
+  // pending → confirmed/cancelled
+  // confirmed → preparing/cancelled
+  // preparing → shipping/cancelled
+  // shipping → completed/cancelled
+  // completed/cancelled → không cho đổi tiếp
+  List<_StatusAction> _nextActions(OrderModel order) {
+    switch (order.status) {
+      case OrderStatus.pending:
+        return [
+          _StatusAction(
+            label: 'Xác nhận đơn',
+            icon: Icons.task_alt_rounded,
+            color: AppColors.statusConfirmedText,
+            action: _StatusOp.confirm,
+          ),
+          _StatusAction(
+            label: 'Huỷ đơn',
+            icon: Icons.cancel_rounded,
+            color: AppColors.statusCancelledText,
+            action: _StatusOp.cancel,
+          ),
+        ];
+      case OrderStatus.confirmed:
+        return [
+          _StatusAction(
+            label: 'Bắt đầu chuẩn bị',
+            icon: Icons.restaurant_rounded,
+            color: AppColors.statusPreparingText,
+            action: _StatusOp.preparing,
+          ),
+          _StatusAction(
+            label: 'Huỷ đơn',
+            icon: Icons.cancel_rounded,
+            color: AppColors.statusCancelledText,
+            action: _StatusOp.cancel,
+          ),
+        ];
+      case OrderStatus.preparing:
+        return [
+          _StatusAction(
+            label: 'Bắt đầu giao',
+            icon: Icons.delivery_dining_rounded,
+            color: AppColors.statusDeliveringText,
+            action: _StatusOp.shipping,
+          ),
+          _StatusAction(
+            label: 'Huỷ đơn',
+            icon: Icons.cancel_rounded,
+            color: AppColors.statusCancelledText,
+            action: _StatusOp.cancel,
+          ),
+        ];
+      case OrderStatus.shipping:
+        return [
+          _StatusAction(
+            label: 'Đánh dấu hoàn thành',
+            icon: Icons.check_circle_rounded,
+            color: AppColors.statusDeliveredText,
+            action: _StatusOp.complete,
+          ),
+          _StatusAction(
+            label: 'Huỷ đơn',
+            icon: Icons.cancel_rounded,
+            color: AppColors.statusCancelledText,
+            action: _StatusOp.cancel,
+          ),
+        ];
+      default:
+        return const [];
+    }
+  }
+
+  Widget _actionTile(
+    BuildContext ctx, {
+    required IconData icon,
+    required Color color,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: AppColors.textMuted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _changeStatus(
+    OrderModel order,
+    _StatusOp op,
+    String label,
+  ) async {
+    if (order.orderId == null) return;
+    final id = order.orderId!;
+    final prov = context.read<OrderProvider>();
+    try {
+      switch (op) {
+        case _StatusOp.confirm:
+          await prov.confirmOrder(id);
+          break;
+        case _StatusOp.preparing:
+          await prov.preparingOrder(id);
+          break;
+        case _StatusOp.shipping:
+          await prov.shippingOrder(id);
+          break;
+        case _StatusOp.complete:
+          await prov.completeOrder(id);
+          break;
+        case _StatusOp.cancel:
+          await prov.cancelOrder(id);
+          break;
+      }
+      if (mounted) _toast('$label thành công');
+    } catch (e) {
+      if (mounted) _toast('Lỗi: $e', error: true);
+    }
+  }
+
+  void _toast(String msg, {bool error = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor:
+            error ? AppColors.statusCancelledText : AppColors.accent3,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
   IconData _statusIcon(String status) {
     switch (status) {
       case OrderStatus.pending:
@@ -822,5 +1110,20 @@ class _OrderStats {
     required this.processing,
     required this.cancelled,
     required this.revenue,
+  });
+}
+
+enum _StatusOp { confirm, preparing, shipping, complete, cancel }
+
+class _StatusAction {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final _StatusOp action;
+  const _StatusAction({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.action,
   });
 }
