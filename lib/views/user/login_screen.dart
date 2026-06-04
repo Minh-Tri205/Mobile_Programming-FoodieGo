@@ -133,7 +133,30 @@ class _LoginScreenState extends State<LoginScreen> {
                 isPassword: true,
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 10),
+
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    AppRoutes.forgotPassword,
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 4),
+                    child: Text(
+                      'Quên mật khẩu?',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.accent1,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 18),
 
               GestureDetector(
                 onTap: isLoading ? null : login,

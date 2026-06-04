@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:doancuoiki/core/constants/app_colors.dart';
 import 'package:doancuoiki/core/constants/app_text_styles.dart';
+import 'package:doancuoiki/data/providers/admin_settings_provider.dart';
 import 'package:doancuoiki/data/providers/category_provider.dart';
 import 'package:doancuoiki/models/category_model.dart';
 
@@ -27,7 +28,8 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor:
+          context.watch<AdminSettingsProvider>().backgroundColor,
 
       appBar: AppBar(
         backgroundColor: AppColors.card,

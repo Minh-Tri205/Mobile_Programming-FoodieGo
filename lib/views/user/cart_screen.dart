@@ -77,7 +77,26 @@ class _CartScreenState extends State<CartScreen> {
       );
       return;
     }
-    final err = cart.applyVoucherModel(v);
+    final usageProv = context.read<VoucherUsageProvider>();
+    final userId = context.read<UserProvider>().currentUserId;
+    final usedIds = usageProv.usages
+        .where((u) => userId != null && u.userId == userId)
+        .map((u) => u.voucherId)
+        .toSet();
+    final err = cart.applyVoucherModel(v, usedVoucherIds: usedIds);
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ $err'),
+          backgroundColor: AppColors.statusCancelledText,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
     // ScaffoldMessenger.of(context).showSnackBar(
     //   SnackBar(
     //     content: Text(err == null ? '✅ Đã áp dụng mã ${v.code}' : '❌ $err'),

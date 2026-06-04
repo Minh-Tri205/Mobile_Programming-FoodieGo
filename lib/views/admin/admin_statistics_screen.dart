@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../data/providers/admin_settings_provider.dart';
 import '../../data/providers/food_provider.dart';
 import '../../data/providers/order_provider.dart';
+import '../../models/food_model.dart';
 import '../../models/order_item_model.dart';
 import '../../models/order_model.dart';
 
@@ -112,7 +114,11 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
         .where((o) => o.status == OrderStatus.cancelled)
         .length;
 
-    final avgValue = curOrders > 0 ? curRevenue / curOrders : 0.0;
+    // Đơn TB chi tinh tren cac don thuc te co doanh thu (loai don da huy),
+    // dong bo voi tu so curRevenue → trung binh phan anh dung gia tri moi don.
+    final paidOrdersCount = curOrders - cancelledCount;
+    final avgValue =
+        paidOrdersCount > 0 ? curRevenue / paidOrdersCount : 0.0;
 
     final completionRate = curOrders > 0
         ? (completedCount / curOrders) * 100
@@ -157,18 +163,37 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
   }
 
   // Top N món bán chạy trong period
-  List<_TopItem> _topItems(List<OrderModel> orders, {int limit = 5}) {
+  // foods: dung de bo sung anh/ten khi orderItem khong co (do list endpoint
+  // khong .ThenInclude(Food)).
+  List<_TopItem> _topItems(
+    List<OrderModel> orders,
+    List<FoodModel> foods, {
+    int limit = 5,
+  }) {
+    final foodById = {
+      for (final f in foods)
+        if (f.foodId != null) f.foodId!: f,
+    };
+
     final map = <int, _TopItem>{};
     for (final o in orders) {
       if (o.status == OrderStatus.cancelled) continue;
       for (final OrderItemModel item in o.items) {
         final id = item.foodId;
+        final food = foodById[id];
+        final name = item.foodName.isNotEmpty
+            ? item.foodName
+            : (food?.name ?? '');
+        final image = (item.foodImageUrl != null &&
+                item.foodImageUrl!.isNotEmpty)
+            ? item.foodImageUrl
+            : food?.imageUrl;
         final cur = map[id];
         if (cur == null) {
           map[id] = _TopItem(
             foodId: id,
-            foodName: item.foodName,
-            foodImageUrl: item.foodImageUrl,
+            foodName: name,
+            foodImageUrl: image,
             quantity: item.quantity,
             revenue: item.subtotal,
           );
@@ -219,7 +244,8 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor:
+          context.watch<AdminSettingsProvider>().backgroundColor,
       body: SafeArea(
         bottom: false,
         child: Consumer<OrderProvider>(
@@ -235,9 +261,10 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
               );
             }
 
+            final foods = context.watch<FoodProvider>().foods;
             final stats = _computeStats(prov.orders);
             final buckets = _dailyBuckets(prov.orders);
-            final tops = _topItems(stats.orderList);
+            final tops = _topItems(stats.orderList, foods);
 
             return RefreshIndicator(
               color: AppColors.accent1,
@@ -544,7 +571,7 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
               icon: Icons.payment_rounded,
               color: AppColors.accent3,
               bg: AppColors.pastel3,
-              value: '${_money(s.avgValue)}đ',
+              value: _money(s.avgValue),
               label: 'Đơn TB',
               growth: null,
               positive: true,
@@ -682,6 +709,9 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
 
   // =========================================================
   // BAR CHART — daily revenue
+  //   - ≤7 ngay: bars chia deu full-width (Expanded)
+  //   - >7 ngay: cuon ngang, moi bar fixed width de khong bi ben va label
+  //     khong de chong nhau
   // =========================================================
   Widget _buildBarChart(List<_DayBucket> buckets) {
     if (buckets.isEmpty) {
@@ -694,6 +724,118 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
       0,
       (m, b) => b.revenue > m ? b.revenue : m,
     );
+
+    final isScrollable = buckets.length > 7;
+
+    Widget bar(_DayBucket b) {
+      final ratio = maxRevenue > 0 ? b.revenue / maxRevenue : 0.0;
+      final showLabel = b.revenue > 0;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            if (showLabel)
+              Text(
+                _money(b.revenue),
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.accent1,
+                ),
+              ),
+            const SizedBox(height: 2),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 320),
+              height: 8 + ratio * 110,
+              width: isScrollable ? 18 : null,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: ratio > 0
+                      ? [
+                          AppColors.accent1,
+                          const Color(0xFFFFAB7E),
+                        ]
+                      : [
+                          AppColors.divider,
+                          AppColors.divider,
+                        ],
+                ),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(6),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget label(_DayBucket b) {
+      final txt = _shortDateLabel(b.date, buckets.length);
+      return SizedBox(
+        width: isScrollable ? 24 : null,
+        child: Text(
+          txt,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 9,
+            color: AppColors.textMuted,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }
+
+    Widget chartContent;
+    if (isScrollable) {
+      // Cuon ngang: bar va label dung cung chieu rong fix de thang hang
+      chartContent = SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Column(
+          children: [
+            SizedBox(
+              height: 150,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: buckets.map(bar).toList(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: buckets
+                  .map(
+                    (b) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: label(b),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ),
+      );
+    } else {
+      chartContent = Column(
+        children: [
+          SizedBox(
+            height: 150,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: buckets.map((b) => Expanded(child: bar(b))).toList(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: buckets
+                .map((b) => Expanded(child: label(b)))
+                .toList(),
+          ),
+        ],
+      );
+    }
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -709,90 +851,15 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
           ),
         ],
       ),
-      child: Column(
-        children: [
-          SizedBox(
-            height: 150,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: buckets.map((b) {
-                final ratio = maxRevenue > 0 ? b.revenue / maxRevenue : 0.0;
-                final showLabel = b.revenue > 0;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (showLabel)
-                          Text(
-                            _money(b.revenue),
-                            style: const TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.accent1,
-                            ),
-                          ),
-                        const SizedBox(height: 2),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 320),
-                          height: 8 + ratio * 110,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: ratio > 0
-                                  ? [
-                                      AppColors.accent1,
-                                      const Color(0xFFFFAB7E),
-                                    ]
-                                  : [
-                                      AppColors.divider,
-                                      AppColors.divider,
-                                    ],
-                            ),
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(6),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: buckets.map((b) {
-              return Expanded(
-                child: Text(
-                  _shortDateLabel(b.date, buckets.length),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 9,
-                    color: AppColors.textMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+      child: chartContent,
     );
   }
 
   String _shortDateLabel(DateTime d, int total) {
-    // Khi nhiều ngày, label thưa đi
-    if (total <= 7) return '${d.day}/${d.month}';
-    if (total <= 30) {
-      // Mỗi 3 ngày 1 nhãn
-      return d.day % 3 == 0 ? '${d.day}' : '';
-    }
-    // 90 ngày — mỗi 7 ngày
-    return d.day % 7 == 1 ? '${d.day}/${d.month}' : '';
+    // Da fixed width per bar khi >7 → moi bar mot label, khong can thua
+    if (total <= 30) return '${d.day}/${d.month}';
+    // 90 ngay: van qua nhieu → moi 3 ngay 1 nhan
+    return d.day % 3 == 1 ? '${d.day}/${d.month}' : '';
   }
 
   Widget _emptyChart() {
@@ -1071,7 +1138,7 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
             ),
           ),
           Text(
-            '${_money(item.revenue)}đ',
+            _money(item.revenue),
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,

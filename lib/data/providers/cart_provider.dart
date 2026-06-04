@@ -142,9 +142,16 @@ class CartProvider extends ChangeNotifier {
 
   // Ap dung voucher tu API (admin tao). Tra ve null neu thanh cong,
   // hoac chuoi ly do neu khong du dieu kien.
-  String? applyVoucherModel(VoucherModel v) {
+  // usedVoucherIds: id cac voucher user nay da dung — chan tai dung.
+  String? applyVoucherModel(
+    VoucherModel v, {
+    Set<int> usedVoucherIds = const {},
+  }) {
     if (v.voucherId == null) return 'Voucher không hợp lệ';
     if (v.isActive != true) return 'Voucher đã bị tắt';
+    if (usedVoucherIds.contains(v.voucherId)) {
+      return 'Bạn đã dùng voucher này rồi';
+    }
     final now = DateTime.now();
     if (v.startDate != null && v.startDate!.isAfter(now)) {
       return 'Voucher chưa đến ngày áp dụng';

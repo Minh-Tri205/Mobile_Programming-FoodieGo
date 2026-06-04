@@ -2,12 +2,6 @@ import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
 import 'order_item_model.dart';
 
-// ============================================================
-// OrderStatus — khớp CHECK constraint trong SQL:
-//   'pending', 'confirmed', 'preparing', 'shipping', 'completed', 'cancelled'
-// Dùng class chứa hằng String để giữ cú pháp OrderStatus.completed
-// như UI cũ mà vẫn lưu dưới dạng String (đúng schema).
-// ============================================================
 class OrderStatus {
   static const String pending = 'pending';
   static const String confirmed = 'confirmed';
@@ -16,7 +10,6 @@ class OrderStatus {
   static const String completed = 'completed';
   static const String cancelled = 'cancelled';
 
-  // Giữ tương thích với code cũ dùng OrderStatus.delivering
   static const String delivering = shipping;
 }
 
@@ -199,7 +192,6 @@ class OrderModel {
   }
 
   // ============================================================
-  // SAMPLE DATA — gán cứng tạm thời để UI chạy
   // Khi backend hoàn thiện, thay thế bằng dữ liệu thật qua provider.
   // ============================================================
   static final List<OrderModel> sampleOrders = [

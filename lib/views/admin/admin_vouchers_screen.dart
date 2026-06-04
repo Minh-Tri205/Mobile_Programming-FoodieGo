@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../data/providers/admin_settings_provider.dart';
 import '../../data/providers/voucher_provider.dart';
 import '../../models/voucher_model.dart';
 import '../../widgets/notification/app_snackbar.dart';
@@ -49,7 +50,8 @@ class _AdminVouchersScreenState extends State<AdminVouchersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor:
+          context.watch<AdminSettingsProvider>().backgroundColor,
       appBar: AppBar(
         backgroundColor: AppColors.card,
         elevation: 0,

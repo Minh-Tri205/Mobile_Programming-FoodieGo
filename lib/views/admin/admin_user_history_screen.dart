@@ -1,6 +1,8 @@
 import 'package:doancuoiki/core/constants/app_colors.dart';
 import 'package:doancuoiki/core/constants/app_text_styles.dart';
+import 'package:doancuoiki/data/providers/admin_settings_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class AdminUserHistoryScreen extends StatelessWidget {
   final int userId;
@@ -9,7 +11,8 @@ class AdminUserHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor:
+          context.watch<AdminSettingsProvider>().backgroundColor,
       appBar: AppBar(
         title: const Text('Lịch sử đơn hàng', style: AppTextStyles.heading2),
         backgroundColor: Colors.transparent,

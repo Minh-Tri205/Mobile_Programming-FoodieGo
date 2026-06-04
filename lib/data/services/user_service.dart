@@ -50,17 +50,15 @@ class UserService {
     }
   }
 
-  // PATCH
+  // PATCH — backend dung [FromForm] (signature giong endpoint multipart),
+  // KHONG nhan application/json -> phai gui multipart/form-data.
+  // Truoc day dung JSON PATCH thi bi 405 Method Not Allowed.
   Future<void> updateUser(int id, Map<String, dynamic> data) async {
-    final response = await http.patch(
-      Uri.parse('$baseUrl/$id'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(data),
-    );
-
-    if (response.statusCode != 200 && response.statusCode != 204) {
-      throw Exception('Update user failed');
-    }
+    final fields = <String, String>{};
+    data.forEach((k, v) {
+      if (v != null) fields[k] = v.toString();
+    });
+    await updateUserMultipart(id, fields: fields);
   }
 
   // PATCH MULTIPART - dung khi co upload avatar tu camera/gallery

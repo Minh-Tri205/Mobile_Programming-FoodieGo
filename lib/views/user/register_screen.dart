@@ -7,6 +7,7 @@ import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_text_styles.dart';
 
 import '../../../data/services/auth_service.dart';
+import '../../../data/services/user_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -33,6 +34,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool isLoading = false;
 
   final AuthService authService = AuthService();
+  final UserService userService = UserService();
+
+  // Rang buoc SDT VN: bat dau 0, theo sau 9 chu so (vd: 0901234567)
+  // Cac dau so dau dung: 03x/05x/07x/08x/09x
+  static final RegExp _phoneRegex = RegExp(r'^0(3|5|7|8|9)\d{8}$');
+  static final RegExp _emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$');
 
   Future<void> register() async {
     final fullName = fullNameController.text.trim();
@@ -50,7 +57,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password.isEmpty ||
         confirmPassword.isEmpty ||
         phone.isEmpty) {
-      AppSnackbar.showError(context, "'Vui lòng nhập đầy đủ");
+      AppSnackbar.showError(context, "Vui lòng nhập đầy đủ");
+      return;
+    }
+
+    if (!_emailRegex.hasMatch(email)) {
+      AppSnackbar.showError(context, "Email không hợp lệ");
+      return;
+    }
+
+    if (!_phoneRegex.hasMatch(phone)) {
+      AppSnackbar.showError(
+        context,
+        "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 03/05/07/08/09)",
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      AppSnackbar.showError(context, "Mật khẩu phải có ít nhất 6 ký tự");
       return;
     }
 
@@ -64,6 +89,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
+      // Check email duy nhat trong DB (UNIQUE) — fail-fast truoc khi POST
+      // de hien thong bao ro rang thay vi de backend tra SqlException.
+      // SDT cung kiem ket hop de tranh UNIQUE violation tu phia DB.
+      final existing = await userService.getUsers();
+      final emailLower = email.toLowerCase();
+      final emailDup = existing.any(
+        (u) => (u.email ?? '').toLowerCase() == emailLower,
+      );
+      if (emailDup) {
+        setState(() => isLoading = false);
+        AppSnackbar.showError(context, "Email đã được sử dụng");
+        return;
+      }
+      final phoneDup = existing.any((u) => (u.phone ?? '') == phone);
+      if (phoneDup) {
+        setState(() => isLoading = false);
+        AppSnackbar.showError(context, "Số điện thoại đã được sử dụng");
+        return;
+      }
+
       final success = await authService.register(
         fullName: fullName,
         email: email,
@@ -179,7 +224,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 hint: 'Số điện thoại',
 
-                icon: '',
+                icon: '📱',
+
+                keyboardType: TextInputType.phone,
               ),
 
               const SizedBox(height: 24),
@@ -260,6 +307,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     bool isPassword = false,
 
     bool isConfirmPassword = false,
+
+    TextInputType? keyboardType,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -279,6 +328,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Expanded(
             child: TextField(
               controller: controller,
+
+              keyboardType: keyboardType,
 
               obscureText: isPassword
                   ? _obscurePassword

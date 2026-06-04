@@ -5,7 +5,12 @@
 //   Navigator.pushNamed(context, AppRoutes.forgotPassword);
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../data/providers/user_provider.dart';
+import '../../../data/services/otp_email_service.dart';
+import '../../../data/services/user_service.dart';
+import '../../../models/user_model.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -16,10 +21,17 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
+  final _userService = UserService();
 
   // Bước 1: nhập email → Bước 2: nhập OTP → Bước 3: đặt mật khẩu mới
   int _step = 1;
   bool _isLoading = false;
+  bool _autoSentForLoggedIn = false; // tranh gui OTP 2 lan khi rebuild
+
+  // OTP that — sinh ngau nhien va gui qua Gmail SMTP
+  String? _sentOtp;
+  DateTime? _otpExpiry; // het han sau 5 phut
+  UserModel? _foundUser;
 
   // Bước 2
   final List<TextEditingController> _otpControllers =
@@ -32,6 +44,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _obscureNew = true;
   bool _obscureConfirm = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Neu user dang dang nhap (mo "Doi mat khau" tu Profile) -> auto-fill
+    // email tu DB + gui OTP luon, bo qua buoc nhap email.
+    if (_autoSentForLoggedIn) return;
+    final current = context.read<UserProvider>().currentUser;
+    final email = current?.email?.trim() ?? '';
+    if (email.isNotEmpty) {
+      _autoSentForLoggedIn = true;
+      _emailController.text = email;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _sendOtp();
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -47,41 +76,76 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  // Giả lập gửi OTP
-  void _sendOtp() {
+  // Gui OTP that qua Gmail SMTP
+  Future<void> _sendOtp() async {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       _showSnack('Vui lòng nhập email hợp lệ', isError: true);
       return;
     }
+
     setState(() => _isLoading = true);
-    Future.delayed(const Duration(seconds: 1), () {
+    try {
+      // 1) Kiem tra email co ton tai trong DB khong
+      final users = await _userService.getUsers();
+      final match = users.where(
+        (u) => (u.email ?? '').toLowerCase() == email.toLowerCase(),
+      );
+      if (match.isEmpty) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        _showSnack('Email chưa được đăng ký', isError: true);
+        return;
+      }
+      _foundUser = match.first;
+
+      // 2) Sinh OTP + gui qua Gmail SMTP
+      final otp = OtpEmailService.generateOtp();
+      await OtpEmailService.sendOtp(toEmail: email, otp: otp);
+
       if (!mounted) return;
       setState(() {
+        _sentOtp = otp;
+        _otpExpiry = DateTime.now().add(const Duration(minutes: 5));
         _isLoading = false;
         _step = 2;
+        // Clear cac o OTP cu
+        for (final c in _otpControllers) {
+          c.clear();
+        }
       });
-      _showSnack('Mã OTP đã gửi tới $email');
-    });
+      _showSnack('Đã gửi OTP tới $email');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showSnack('Lỗi gửi OTP: $e', isError: true);
+    }
   }
 
-  // Giả lập xác nhận OTP (mã mẫu: 1234)
+  // Xac nhan OTP nguoi dung nhap voi OTP da gui
   void _verifyOtp() {
     final otp = _otpControllers.map((c) => c.text).join();
     if (otp.length < 4) {
       _showSnack('Vui lòng nhập đủ 4 số OTP', isError: true);
       return;
     }
-    // Demo: OTP đúng là 1234
-    if (otp != '1234') {
+    if (_sentOtp == null) {
+      _showSnack('Vui lòng gửi lại OTP', isError: true);
+      return;
+    }
+    if (_otpExpiry != null && DateTime.now().isAfter(_otpExpiry!)) {
+      _showSnack('OTP đã hết hạn. Vui lòng gửi lại', isError: true);
+      return;
+    }
+    if (otp != _sentOtp) {
       _showSnack('Mã OTP không đúng. Thử lại!', isError: true);
       return;
     }
     setState(() => _step = 3);
   }
 
-  // Giả lập đặt mật khẩu mới
-  void _resetPassword() {
+  // Doi mat khau qua API
+  Future<void> _resetPassword() async {
     final newPw = _newPasswordController.text.trim();
     final confirmPw = _confirmPasswordController.text.trim();
     if (newPw.length < 6) {
@@ -92,16 +156,35 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       _showSnack('Mật khẩu xác nhận không khớp', isError: true);
       return;
     }
+    if (_foundUser == null) {
+      _showSnack('Phiên làm việc lỗi, vui lòng thử lại', isError: true);
+      return;
+    }
+
     setState(() => _isLoading = true);
-    Future.delayed(const Duration(seconds: 1), () {
+    try {
+      // Backend tu hash khi nhan passwordHash plain (xem cach Register dang
+      // gui plain o auth_service.dart:55). Neu backend khong tu hash thi
+      // can hash o day bang sha256.
+      await _userService.updateUser(
+        _foundUser!.userId,
+        {'passwordHash': newPw},
+      );
       if (!mounted) return;
       setState(() => _isLoading = false);
       _showSnack('✅ Đổi mật khẩu thành công!');
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (!mounted) return;
-        Navigator.pop(context);
-      });
-    });
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showSnack('Đổi mật khẩu thất bại: $e', isError: true);
+    }
+  }
+
+  Future<void> _resendOtp() async {
+    await _sendOtp();
   }
 
   void _showSnack(String msg, {bool isError = false}) {
@@ -318,13 +401,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
         const SizedBox(height: 16),
 
-        // Gửi lại OTP
+        // Gửi lại OTP — gui lai email moi voi OTP moi
         Center(
           child: GestureDetector(
-            onTap: () => _showSnack('Đã gửi lại OTP!'),
-            child: const Text(
-              'Gửi lại mã',
-              style: TextStyle(
+            onTap: _isLoading ? null : _resendOtp,
+            child: Text(
+              _isLoading ? 'Đang gửi...' : 'Gửi lại mã',
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: AppColors.accent1,
@@ -336,16 +419,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
         const SizedBox(height: 32),
         _primaryBtn(label: 'Xác nhận', onTap: _verifyOtp),
-
-        const SizedBox(height: 12),
-        Center(
-          child: Text(
-            '💡 Demo: nhập 1234 để tiếp tục',
-            style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textMuted.withOpacity(0.6)),
-          ),
-        ),
       ],
     );
   }

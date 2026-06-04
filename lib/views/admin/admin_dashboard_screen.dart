@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
+import '../../data/providers/admin_settings_provider.dart';
 import '../../data/providers/category_provider.dart';
 import '../../data/providers/food_provider.dart';
 import '../../data/providers/order_provider.dart';
@@ -77,8 +78,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // =========================================================
   @override
   Widget build(BuildContext context) {
+    final bg = context.watch<AdminSettingsProvider>().backgroundColor;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bg,
       drawer: const AdminDrawer(),
       body: SafeArea(
         bottom: false,
@@ -830,7 +832,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${_money(order.totalAmount)}đ',
+                  _money(order.totalAmount),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,

@@ -80,6 +80,8 @@ import 'data/providers/voucher_usage_provider.dart';
 import 'data/repositories/voucher_usage_repository.dart';
 import 'data/services/voucher_usage_service.dart';
 
+import 'data/providers/admin_settings_provider.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -128,6 +130,9 @@ void main() {
           create: (_) => VoucherUsageProvider(
             VoucherUsageRepository(VoucherUsageService()),
           ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AdminSettingsProvider(),
         ),
       ],
 

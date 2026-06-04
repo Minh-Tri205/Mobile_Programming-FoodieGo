@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../data/providers/admin_settings_provider.dart';
 import '../../data/providers/category_provider.dart';
 import '../../data/providers/food_provider.dart';
 import '../../models/category_model.dart';
@@ -288,7 +289,8 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor:
+          context.watch<AdminSettingsProvider>().backgroundColor,
       body: SafeArea(
         child: Column(
           children: [

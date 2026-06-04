@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
+import '../../data/providers/admin_settings_provider.dart';
 import '../../data/providers/order_provider.dart';
 import '../../data/providers/user_provider.dart';
 import '../../models/order_model.dart';
@@ -149,7 +150,8 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor:
+          context.watch<AdminSettingsProvider>().backgroundColor,
       body: FutureBuilder<_UserDetailData>(
         future: _future,
         builder: (context, snap) {

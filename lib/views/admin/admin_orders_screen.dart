@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
+import '../../data/providers/admin_settings_provider.dart';
 import '../../data/providers/order_provider.dart';
 import '../../models/order_model.dart';
 
@@ -132,7 +133,8 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor:
+          context.watch<AdminSettingsProvider>().backgroundColor,
       body: SafeArea(
         bottom: false,
         child: Consumer<OrderProvider>(
@@ -312,7 +314,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
               Expanded(
                 child: _bigStat(
                   label: 'Doanh thu',
-                  value: '${_formatMoney(s.revenue)}đ',
+                  value: _formatMoney(s.revenue),
                   sub: '${s.total} đơn',
                   icon: Icons.payments_rounded,
                   gradient: const [AppColors.accent1, Color(0xFFFFAB7E)],
@@ -690,7 +692,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                 ),
                 const Spacer(),
                 Text(
-                  '${_formatMoney(order.totalAmount)}đ',
+                  _formatMoney(order.totalAmount),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -762,7 +764,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${order.recipientName} · ${_formatMoney(order.totalAmount)}đ',
+                        '${order.recipientName} · ${_formatMoney(order.totalAmount)}',
                         style: const TextStyle(
                           fontSize: 11,
                           color: AppColors.textMuted,

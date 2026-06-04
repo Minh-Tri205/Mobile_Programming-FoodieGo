@@ -51,7 +51,7 @@ class FoodModel {
           json['categoryName'] ?? cat?['name'] ?? '',
       name: json['name'] ?? '',
       price: (json['price'] ?? 0).toDouble(),
-      imageUrl: json['imageUrl'],
+      imageUrl: _resolveImageUrl(json['imageUrl']),
       description: json['description'],
       totalSold: json['totalSold'] ?? 0,
       stockQuantity: json['stockQuantity'] ?? 0,
@@ -61,6 +61,18 @@ class FoodModel {
           ? DateTime.tryParse(json['deletedAt'].toString())
           : null,
     );
+  }
+
+  // Backend tra ImageUrl la filename thuan (vd: "abc.jpg") tu cac endpoint
+  // (FoodItem, Favorite.Include(Food), ...). Prepend base URL de Image.network
+  // load duoc. Giu nguyen neu da la URL day du hoac asset path.
+  static String? _resolveImageUrl(dynamic raw) {
+    if (raw == null) return null;
+    final s = raw.toString().trim();
+    if (s.isEmpty) return null;
+    if (s.startsWith('http://') || s.startsWith('https://')) return s;
+    if (s.startsWith('assets/')) return s;
+    return 'http://10.0.2.2:5187/Uploads/FoodItems/$s';
   }
 
   Map<String, dynamic> toJson() => {

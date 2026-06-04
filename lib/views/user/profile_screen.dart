@@ -306,9 +306,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 const SizedBox(height: 12),
 
-                // Edit profile pill
+                // Edit profile pill — mo form sua ten + SDT
                 GestureDetector(
-                  onTap: _uploadingAvatar ? null : _showAvatarPickerSheet,
+                  onTap: _uploadingAvatar ? null : () => _showEditInfoSheet(user),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 18,
@@ -681,6 +681,256 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  // =========================================================
+  // EDIT INFO SHEET — sua ten + SDT
+  // =========================================================
+  void _showEditInfoSheet(UserModel user) {
+    final nameCtrl = TextEditingController(text: user.fullName);
+    final phoneCtrl = TextEditingController(text: user.phone ?? '');
+    final phoneRegex = RegExp(r'^0(3|5|7|8|9)\d{8}$');
+    bool saving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetCtx).viewInsets.bottom,
+          ),
+          child: StatefulBuilder(
+            builder: (ctx, setSheetState) {
+              Future<void> save() async {
+                final name = nameCtrl.text.trim();
+                final phone = phoneCtrl.text.trim();
+                if (name.isEmpty) {
+                  _toast(ctx, 'Vui lòng nhập họ tên', error: true);
+                  return;
+                }
+                if (phone.isEmpty) {
+                  _toast(ctx, 'Vui lòng nhập số điện thoại', error: true);
+                  return;
+                }
+                if (!phoneRegex.hasMatch(phone)) {
+                  _toast(
+                    ctx,
+                    'SĐT không hợp lệ (10 số, bắt đầu 03/05/07/08/09)',
+                    error: true,
+                  );
+                  return;
+                }
+
+                // Khong co gi thay doi -> dong sheet
+                if (name == user.fullName && phone == (user.phone ?? '')) {
+                  Navigator.pop(ctx);
+                  return;
+                }
+
+                setSheetState(() => saving = true);
+                try {
+                  await context.read<UserProvider>().updateUser(
+                    user.userId,
+                    {'fullName': name, 'phone': phone},
+                  );
+                  // Refresh tu server de chac chan
+                  await context
+                      .read<UserProvider>()
+                      .fetchUserById(user.userId);
+                  if (!mounted) return;
+                  Navigator.pop(ctx);
+                  _toast(context, 'Cập nhật hồ sơ thành công');
+                } catch (e) {
+                  if (!ctx.mounted) return;
+                  setSheetState(() => saving = false);
+                  _toast(ctx, _friendlyUserUpdateError(e), error: true);
+                }
+              }
+
+              return Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const Text(
+                      'Chỉnh sửa hồ sơ',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _editField(
+                      controller: nameCtrl,
+                      icon: Icons.person_outline_rounded,
+                      hint: 'Họ và tên',
+                    ),
+                    const SizedBox(height: 12),
+                    _editField(
+                      controller: phoneCtrl,
+                      icon: Icons.phone_iphone_rounded,
+                      hint: 'Số điện thoại (10 số)',
+                      keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: saving ? null : () => Navigator.pop(ctx),
+                            child: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFEFEF),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                'Huỷ',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: saving ? null : save,
+                            child: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                color: AppColors.accent1,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              alignment: Alignment.center,
+                              child: saving
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.4,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Lưu thay đổi',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _editField({
+    required TextEditingController controller,
+    required IconData icon,
+    required String hint,
+    TextInputType? keyboardType,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAF7F4),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: AppColors.textMuted),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              keyboardType: keyboardType,
+              decoration: InputDecoration(
+                hintText: hint,
+                border: InputBorder.none,
+                hintStyle: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _toast(BuildContext ctx, String msg, {bool error = false}) {
+    ScaffoldMessenger.of(ctx).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor:
+            error ? AppColors.statusCancelledText : AppColors.accent3,
+        behavior: SnackBarBehavior.floating,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  // Map loi backend (SqlException UNIQUE / 409 / "duplicate") -> message tieng Viet
+  String _friendlyUserUpdateError(Object e) {
+    final raw = e.toString().toLowerCase();
+    if (raw.contains('unique') ||
+        raw.contains('duplicate') ||
+        raw.contains('uq_users_phone') ||
+        raw.contains('ix_users_phone') ||
+        raw.contains('cannot insert duplicate')) {
+      // Phone va email deu co UNIQUE — phan biet neu detect duoc
+      if (raw.contains('phone')) {
+        return 'Số điện thoại đã được sử dụng bởi tài khoản khác';
+      }
+      if (raw.contains('email')) {
+        return 'Email đã được sử dụng bởi tài khoản khác';
+      }
+      return 'Thông tin đã được sử dụng bởi tài khoản khác';
+    }
+    if (raw.contains('failed host lookup') || raw.contains('socketexception')) {
+      return 'Không kết nối được máy chủ';
+    }
+    return 'Cập nhật thất bại: $e';
   }
 
   // =========================================================

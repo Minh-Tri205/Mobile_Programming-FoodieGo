@@ -1,6 +1,7 @@
 import 'package:doancuoiki/core/constants/app_colors.dart';
 import 'package:doancuoiki/core/constants/app_routes.dart';
 import 'package:doancuoiki/core/constants/app_text_styles.dart';
+import 'package:doancuoiki/data/providers/admin_settings_provider.dart';
 import 'package:doancuoiki/data/providers/user_provider.dart';
 import 'package:doancuoiki/models/user_model.dart';
 import 'package:doancuoiki/widgets/admin_widgets/app_search_bar.dart';
@@ -43,7 +44,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor:
+          context.watch<AdminSettingsProvider>().backgroundColor,
 
       appBar: AppBar(
         title: const Text('Quản lý người dùng', style: AppTextStyles.heading2),
