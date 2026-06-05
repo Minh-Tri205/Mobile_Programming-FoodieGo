@@ -7,6 +7,7 @@ import '../../core/constants/app_routes.dart';
 import '../../data/providers/admin_settings_provider.dart';
 import '../../data/providers/category_provider.dart';
 import '../../data/providers/food_provider.dart';
+import '../../data/providers/notification_provider.dart';
 import '../../data/providers/order_provider.dart';
 import '../../data/providers/user_provider.dart';
 import '../../models/order_model.dart';
@@ -181,42 +182,75 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ],
                 ),
               ),
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+              GestureDetector(
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  AppRoutes.adminNotifications,
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    const Icon(
-                      Icons.notifications_outlined,
-                      size: 20,
-                      color: AppColors.accent1,
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: AppColors.accent1,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.card, width: 1.5),
-                        ),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(
+                        Icons.notifications_outlined,
+                        size: 20,
+                        color: AppColors.accent1,
+                      ),
+                      // Badge realtime: chi hien khi co tin chua doc
+                      Selector<NotificationProvider, int>(
+                        selector: (_, p) => p.unreadCount,
+                        builder: (_, count, __) {
+                          if (count <= 0) return const SizedBox.shrink();
+                          final label = count > 99 ? '99+' : '$count';
+                          return Positioned(
+                            top: 2,
+                            right: 2,
+                            child: Container(
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.accent1,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppColors.card,
+                                  width: 1.5,
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                label,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.1,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

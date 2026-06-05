@@ -82,6 +82,11 @@ import 'data/services/voucher_usage_service.dart';
 
 import 'data/providers/admin_settings_provider.dart';
 
+import 'data/providers/notification_provider.dart';
+import 'data/repositories/notification_repository.dart';
+import 'data/services/notification_service.dart';
+import 'data/services/notification_signalr_service.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -133,6 +138,12 @@ void main() {
         ),
         ChangeNotifierProvider(
           create: (_) => AdminSettingsProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => NotificationProvider(
+            NotificationRepository(NotificationService()),
+            NotificationSignalRService(),
+          ),
         ),
       ],
 

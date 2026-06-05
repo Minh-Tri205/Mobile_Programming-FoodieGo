@@ -51,4 +51,20 @@ class VoucherUsageService {
       throw Exception('Delete voucher usage failed: ${res.statusCode}');
     }
   }
+
+  // Xoa TAT CA usage cua 1 voucher -> dung khi admin "mo lai" voucher
+  // de moi user co the dung voucher do lan nua.
+  // Backend chua co endpoint /by-voucher -> tu fetch + loop delete.
+  Future<int> deleteByVoucher(int voucherId) async {
+    final all = await getAll();
+    final targets = all.where((u) => u.voucherId == voucherId).toList();
+    var count = 0;
+    for (final u in targets) {
+      if (u.usageId != null) {
+        await delete(u.usageId!);
+        count++;
+      }
+    }
+    return count;
+  }
 }

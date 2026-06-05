@@ -7,6 +7,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../data/providers/admin_settings_provider.dart';
 import '../../data/providers/voucher_provider.dart';
+import '../../data/providers/voucher_usage_provider.dart';
 import '../../models/voucher_model.dart';
 import '../../widgets/notification/app_snackbar.dart';
 
@@ -412,6 +413,31 @@ class _AdminVouchersScreenState extends State<AdminVouchersScreen> {
                 },
               ),
               _optionTile(
+                Icons.refresh_rounded,
+                'Mở lại voucher (reset lượt dùng)',
+                AppColors.accent3,
+                () async {
+                  Navigator.pop(sheetCtx);
+                  if (v.voucherId == null) return;
+                  final usageProv = context.read<VoucherUsageProvider>();
+                  final ok = await _confirmReopen(context, v.code);
+                  if (ok != true) return;
+                  try {
+                    final n = await usageProv.resetUsageOfVoucher(
+                      v.voucherId!,
+                    );
+                    if (mounted) {
+                      AppSnackbar.showSuccess(
+                        context,
+                        'Đã reset $n lượt dùng. Mọi user có thể dùng lại.',
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) AppSnackbar.showError(context, 'Lỗi: $e');
+                  }
+                },
+              ),
+              _optionTile(
                 Icons.delete_outline_rounded,
                 'Xóa voucher',
                 AppColors.statusCancelledText,
@@ -436,6 +462,37 @@ class _AdminVouchersScreenState extends State<AdminVouchersScreen> {
           ),
         );
       },
+    );
+  }
+
+  Future<bool?> _confirmReopen(BuildContext context, String code) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Mở lại voucher?'),
+        content: Text(
+          'Sẽ xoá toàn bộ lượt dùng của "$code". '
+          'Mọi user (kể cả đã dùng) sẽ có thể dùng voucher này lần nữa.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy',
+                style: TextStyle(color: AppColors.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accent3,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Mở lại',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 

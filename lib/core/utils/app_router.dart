@@ -30,6 +30,7 @@ import 'package:doancuoiki/views/user/forgot_password_screen.dart';
 import 'package:doancuoiki/views/user/address_screen.dart';
 import 'package:doancuoiki/views/admin/admin_vouchers_screen.dart';
 import 'package:doancuoiki/views/admin/admin_settings_screen.dart';
+import 'package:doancuoiki/views/admin/admin_notifications_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -100,6 +101,9 @@ class AppRouter {
 
       case AppRoutes.adminSettings:
         return _slide(const AdminSettingsScreen(), settings);
+
+      case AppRoutes.adminNotifications:
+        return _slide(const AdminNotificationsScreen(), settings);
 
       default:
         return _slide(const SplashScreen(), settings);

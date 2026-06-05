@@ -91,12 +91,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       route: AppRoutes.addresses,
                     ),
                     _MenuEntry(
-                      icon: Icons.credit_card_outlined,
-                      iconBg: AppColors.pastel3,
-                      iconColor: AppColors.accent3,
-                      label: 'Phương thức thanh toán',
-                    ),
-                    _MenuEntry(
                       icon: Icons.favorite_border_rounded,
                       iconBg: AppColors.pastel5,
                       iconColor: AppColors.accent5,
@@ -308,7 +302,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 // Edit profile pill — mo form sua ten + SDT
                 GestureDetector(
-                  onTap: _uploadingAvatar ? null : () => _showEditInfoSheet(user),
+                  onTap: _uploadingAvatar
+                      ? null
+                      : () => _showEditInfoSheet(user),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 18,
@@ -553,7 +549,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildMenuItem(_MenuEntry e, {required bool isLast}) {
     return InkWell(
-      onTap: e.onTap ??
+      onTap:
+          e.onTap ??
           (e.route != null
               ? () => Navigator.pushNamed(context, e.route!)
               : () {}),
@@ -731,14 +728,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 setSheetState(() => saving = true);
                 try {
-                  await context.read<UserProvider>().updateUser(
-                    user.userId,
-                    {'fullName': name, 'phone': phone},
-                  );
+                  await context.read<UserProvider>().updateUser(user.userId, {
+                    'fullName': name,
+                    'phone': phone,
+                  });
                   // Refresh tu server de chac chan
-                  await context
-                      .read<UserProvider>()
-                      .fetchUserById(user.userId);
+                  await context.read<UserProvider>().fetchUserById(user.userId);
                   if (!mounted) return;
                   Navigator.pop(ctx);
                   _toast(context, 'Cập nhật hồ sơ thành công');
@@ -752,8 +747,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               return Container(
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                 child: Column(
@@ -799,8 +793,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: GestureDetector(
                             onTap: saving ? null : () => Navigator.pop(ctx),
                             child: Container(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFEFEFEF),
                                 borderRadius: BorderRadius.circular(14),
@@ -822,8 +815,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: GestureDetector(
                             onTap: saving ? null : save,
                             child: Container(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               decoration: BoxDecoration(
                                 color: AppColors.accent1,
                                 borderRadius: BorderRadius.circular(14),
@@ -900,11 +892,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor:
-            error ? AppColors.statusCancelledText : AppColors.accent3,
+        backgroundColor: error
+            ? AppColors.statusCancelledText
+            : AppColors.accent3,
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
       ),
     );
@@ -1089,10 +1081,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     setState(() => _uploadingAvatar = true);
     try {
-      await userProv.updateUserMultipart(
-        id,
-        avatarFilePath: filePath,
-      );
+      await userProv.updateUserMultipart(id, avatarFilePath: filePath);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

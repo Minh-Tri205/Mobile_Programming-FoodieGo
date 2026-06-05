@@ -47,4 +47,13 @@ class VoucherUsageProvider extends ChangeNotifier {
 
   int countByVoucher(int voucherId) =>
       usages.where((u) => u.voucherId == voucherId).length;
+
+  // Admin "mo lai" voucher -> xoa moi usage cua voucher do
+  // de moi user duoc dung lai.
+  Future<int> resetUsageOfVoucher(int voucherId) async {
+    final count = await repository.deleteByVoucher(voucherId);
+    usages.removeWhere((u) => u.voucherId == voucherId);
+    notifyListeners();
+    return count;
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:doancuoiki/data/providers/notification_provider.dart';
 import 'package:doancuoiki/data/providers/user_provider.dart';
 import 'package:doancuoiki/widgets/notification/app_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final user = await authService.login(email, password);
+      if (!mounted) return;
 
       if (user == null) {
         AppSnackbar.showError(context, "Email hoặc mật khẩu không chính xác");
@@ -52,6 +54,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
       context.read<UserProvider>().setCurrentUserId(user.userId);
 
+      // Khoi dong Notification: fetch list + unread + ket noi SignalR realtime.
+      // Dat hook onPushed de hien Snackbar khi co thong bao moi (toan app).
+      final notifProv = context.read<NotificationProvider>();
+      notifProv.onPushed = (n) {
+        if (!mounted) return;
+        AppSnackbar.showInfo(context, '${n.title}: ${n.body}');
+      };
+      notifProv.bootstrap(user.userId); // khong await — chay nen
+
       // CHECK ROLE
       if (user.role?.toLowerCase() == 'admin') {
         Navigator.pushReplacementNamed(context, AppRoutes.adminDashboard);
@@ -59,6 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacementNamed(context, AppRoutes.home);
       }
     } catch (e) {
+      if (!mounted) return;
       AppSnackbar.showError(context, 'Lỗi: $e');
     } finally {
       setState(() {

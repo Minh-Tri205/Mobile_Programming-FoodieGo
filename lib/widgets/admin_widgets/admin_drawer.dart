@@ -1,6 +1,7 @@
 import 'package:doancuoiki/core/constants/app_routes.dart';
 import 'package:doancuoiki/views/admin/admin_categories_screen.dart';
 import 'package:doancuoiki/views/admin/admin_dashboard_screen.dart';
+import 'package:doancuoiki/views/admin/admin_notifications_screen.dart';
 import 'package:doancuoiki/views/admin/admin_orders_screen.dart';
 import 'package:doancuoiki/views/admin/admin_products_screen.dart';
 import 'package:doancuoiki/views/admin/admin_settings_screen.dart';
@@ -81,6 +82,12 @@ class AdminDrawer extends StatelessWidget {
             Icons.local_offer_rounded,
             'Mã giảm giá',
             const AdminVouchersScreen(),
+          ),
+          _buildDrawerItem(
+            context,
+            Icons.notifications_rounded,
+            'Thông báo',
+            const AdminNotificationsScreen(),
           ),
           _buildDrawerItem(
             context,

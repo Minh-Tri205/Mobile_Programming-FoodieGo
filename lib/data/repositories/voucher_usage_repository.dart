@@ -13,4 +13,6 @@ class VoucherUsageRepository {
       service.getByUser(userId);
   Future<VoucherUsageModel> create(VoucherUsageModel u) => service.create(u);
   Future<void> delete(int id) => service.delete(id);
+  Future<int> deleteByVoucher(int voucherId) =>
+      service.deleteByVoucher(voucherId);
 }
